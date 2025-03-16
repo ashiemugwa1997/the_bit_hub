@@ -1,0 +1,128 @@
+{% extends "trading_hub/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Create Stop Order - {{ crypto.name }}</h4>
+                </div>
+                <div class="card-body">
+                    {% if error %}
+                    <div class="alert alert-danger">{{ error }}</div>
+                    {% endif %}
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">Current Market Price</label>
+                            <div class="form-control-plaintext">${{ current_price|floatformat:2 }}</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Order Type</label>
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio" class="btn-check" name="side" id="buy" value="buy" checked>
+                                <label class="btn btn-outline-primary" for="buy">Stop Buy</label>
+                                
+                                <input type="radio" class="btn-check" name="side" id="sell" value="sell">
+                                <label class="btn btn-outline-primary" for="sell">Stop Sell</label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="amount" class="form-label">Amount ({{ crypto.code }})</label>
+                            <input type="number" class="form-control" id="amount" name="amount" step="0.00000001" required>
+                            <div class="form-text" id="amountUsdValue"></div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="stop_price" class="form-label">Stop Price (USD)</label>
+                            <input type="number" class="form-control" id="stop_price" name="stop_price" step="0.01" required>
+                            <div class="form-text" id="stopInfo"></div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="limit_price" class="form-label">Limit Price (USD) - Optional</label>
+                            <input type="number" class="form-control" id="limit_price" name="limit_price" step="0.01">
+                            <div class="form-text">Set a limit price to create a stop-limit order. Leave empty for a standard stop order.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="expires_at" class="form-label">Expires At (Optional)</label>
+                            <input type="datetime-local" class="form-control" id="expires_at" name="expires_at">
+                            <div class="form-text">Leave empty for a Good-til-Cancelled (GTC) order</div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Create Stop Order</button>
+                            <a href="{% url 'crypto_detail' crypto.code %}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const currentPrice = {{ current_price }};
+    const amountInput = document.getElementById('amount');
+    const stopPriceInput = document.getElementById('stop_price');
+    const limitPriceInput = document.getElementById('limit_price');
+    const amountUsdValue = document.getElementById('amountUsdValue');
+    const stopInfo = document.getElementById('stopInfo');
+    const sideInputs = document.querySelectorAll('input[name="side"]');
+    
+    // Set initial stop price to current market price
+    stopPriceInput.value = currentPrice.toFixed(2);
+    
+    // Update USD value when amount or price changes
+    function updateUsdValue() {
+        const amount = parseFloat(amountInput.value) || 0;
+        const price = parseFloat(stopPriceInput.value) || currentPrice;
+        const usdValue = amount * price;
+        amountUsdValue.textContent = `≈ $${usdValue.toFixed(2)}`;
+    }
+    
+    function updateStopInfo() {
+        const side = document.querySelector('input[name="side"]:checked').value;
+        const stopPrice = parseFloat(stopPriceInput.value) || currentPrice;
+        
+        if (side === 'buy') {
+            if (stopPrice <= currentPrice) {
+                stopInfo.textContent = 'Buy stop orders should be above the current market price';
+                stopInfo.className = 'form-text text-danger';
+            } else {
+                stopInfo.textContent = 'Order will trigger when price rises to this level';
+                stopInfo.className = 'form-text';
+            }
+        } else {
+            if (stopPrice >= currentPrice) {
+                stopInfo.textContent = 'Sell stop orders should be below the current market price';
+                stopInfo.className = 'form-text text-danger';
+            } else {
+                stopInfo.textContent = 'Order will trigger when price falls to this level';
+                stopInfo.className = 'form-text';
+            }
+        }
+    }
+    
+    amountInput.addEventListener('input', updateUsdValue);
+    stopPriceInput.addEventListener('input', () => {
+        updateUsdValue();
+        updateStopInfo();
+    });
+    sideInputs.forEach(input => {
+        input.addEventListener('change', updateStopInfo);
+    });
+    
+    // Initial updates
+    updateUsdValue();
+    updateStopInfo();
+});
+</script>
+{% endblock %}

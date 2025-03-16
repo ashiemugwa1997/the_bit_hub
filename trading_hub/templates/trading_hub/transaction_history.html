@@ -1,0 +1,160 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction History - BitHub</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --coinbase-blue: #0052FF;
+            --coinbase-dark: #05123D;
+            --coinbase-light-bg: #F7F8FA;
+        }
+        body {
+            background-color: var(--coinbase-light-bg);
+            font-family: 'Inter', sans-serif;
+        }
+        .navbar {
+            background-color: #ffffff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .navbar-brand {
+            font-weight: 600;
+            color: var(--coinbase-blue);
+        }
+        .nav-link {
+            color: #333;
+            font-weight: 500;
+        }
+        .nav-link:hover {
+            color: var(--coinbase-blue);
+        }
+        .nav-link.active {
+            color: var(--coinbase-blue);
+        }
+        .btn-primary {
+            background-color: var(--coinbase-blue);
+            border-color: var(--coinbase-blue);
+        }
+        .btn-outline-primary {
+            border-color: var(--coinbase-blue);
+            color: var(--coinbase-blue);
+        }
+        .btn-outline-primary:hover {
+            background-color: var(--coinbase-blue);
+            color: white;
+        }
+        .card {
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            border: none;
+        }
+        .table {
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'dashboard' %}">
+                <i class="fab fa-bitcoin me-2"></i>BitHub
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'dashboard' %}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'asset_list' %}">Assets</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'transaction_history' %}">Activity</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'wallet_list' %}">Wallets</a>
+                    </li>
+                </ul>
+                <div class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            {{ request.user.username }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{% url 'profile' %}">Profile</a></li>
+                            <li><a class="dropdown-item" href="{% url 'payment_methods' %}">Payment Methods</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'logout' %}">Sign out</a></li>
+                        </ul>
+                    </li>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container py-4">
+        <h1 class="mb-4">Transaction History</h1>
+        <div class="card">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Amount</th>
+                                <th>Currency</th>
+                                <th>Status</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for transaction in transactions %}
+                            <tr>
+                                <td>{{ transaction.created_at|date:"M d, Y H:i" }}</td>
+                                <td>{{ transaction.get_transaction_type_display }}</td>
+                                <td>{{ transaction.amount|floatformat:8 }}</td>
+                                <td>{{ transaction.currency }}</td>
+                                <td>{{ transaction.status }}</td>
+                                <td>{{ transaction.description }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-3">
+                                    No transactions found.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white py-4 mt-4 border-top">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-0">© 2025 BitHub. All rights reserved.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <a href="#" class="text-muted me-3">Terms of Service</a>
+                    <a href="#" class="text-muted">Privacy Policy</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

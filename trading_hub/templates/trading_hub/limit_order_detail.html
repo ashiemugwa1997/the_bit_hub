@@ -1,0 +1,129 @@
+{% extends "trading_hub/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Limit Order Details</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>Order Status</h5>
+                            <span class="badge bg-{% if order.status == 'open' %}primary{% elif order.status == 'filled' %}success{% elif order.status == 'cancelled' %}secondary{% elif order.status == 'expired' %}warning{% endif %} fs-6">
+                                {{ order.status|upper }}
+                            </span>
+                        </div>
+                        <div class="col-md-6 text-md-end">
+                            {% if order.status == 'open' %}
+                            <button class="btn btn-danger cancel-order" data-order-id="{{ order.id }}">
+                                Cancel Order
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <h6>Order Type</h6>
+                            <p class="text-{% if order.side == 'buy' %}success{% else %}danger{% endif %}">
+                                {{ order.side|upper }}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Asset</h6>
+                            <p>{{ order.cryptocurrency.name }} ({{ order.cryptocurrency.code }})</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Amount</h6>
+                            <p>{{ order.amount|floatformat:8 }} {{ order.cryptocurrency.code }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Limit Price</h6>
+                            <p>${{ order.limit_price|floatformat:2 }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Total Value</h6>
+                            <p>${{ order.amount|multiply:order.limit_price|floatformat:2 }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Created At</h6>
+                            <p>{{ order.created_at|date:"M d, Y H:i:s" }}</p>
+                        </div>
+                        {% if order.expires_at %}
+                        <div class="col-md-6">
+                            <h6>Expires At</h6>
+                            <p>{{ order.expires_at|date:"M d, Y H:i:s" }}</p>
+                        </div>
+                        {% endif %}
+                        {% if order.status == 'filled' %}
+                        <div class="col-md-6">
+                            <h6>Filled At</h6>
+                            <p>{{ order.updated_at|date:"M d, Y H:i:s" }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>From Wallet</h6>
+                            <p>{{ order.from_wallet.name }} ({{ order.from_wallet.currency_code }})</p>
+                            <p class="text-muted">Balance: {{ order.from_wallet.balance|floatformat:8 }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>To Wallet</h6>
+                            <p>{{ order.to_wallet.name }} ({{ order.to_wallet.currency_code }})</p>
+                            <p class="text-muted">Balance: {{ order.to_wallet.balance|floatformat:8 }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="{% url 'limit_order_list' %}" class="btn btn-secondary">Back to Orders</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const cancelButton = document.querySelector('.cancel-order');
+    if (cancelButton) {
+        cancelButton.addEventListener('click', async function() {
+            if (confirm('Are you sure you want to cancel this order?')) {
+                const orderId = this.getAttribute('data-order-id');
+                try {
+                    const response = await fetch(`/coinbase/limit-order/${orderId}/cancel/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': getCookie('csrftoken')
+                        }
+                    });
+                    
+                    const data = await response.json();
+                    if (data.status === 'success') {
+                        window.location.reload();
+                    } else {
+                        alert('Failed to cancel order: ' + data.message);
+                    }
+                } catch (error) {
+                    console.error('Error cancelling order:', error);
+                    alert('An error occurred while cancelling the order');
+                }
+            }
+        });
+    }
+    
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+});
+</script>
+{% endblock %}

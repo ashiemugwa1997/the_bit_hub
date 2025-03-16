@@ -1,0 +1,351 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BitHub - Your Cryptocurrency Hub</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --coinbase-blue: #0052FF;
+            --coinbase-dark: #05123D;
+            --coinbase-light-bg: #F7F8FA;
+        }
+        body {
+            background-color: var(--coinbase-light-bg);
+            font-family: 'Inter', sans-serif;
+        }
+        .navbar {
+            background-color: #ffffff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .navbar-brand {
+            font-weight: 600;
+            color: var(--coinbase-blue);
+        }
+        .nav-link {
+            color: #333;
+            font-weight: 500;
+        }
+        .nav-link:hover {
+            color: var(--coinbase-blue);
+        }
+        .btn-primary {
+            background-color: var(--coinbase-blue);
+            border-color: var(--coinbase-blue);
+        }
+        .btn-outline-primary {
+            border-color: var(--coinbase-blue);
+            color: var(--coinbase-blue);
+        }
+        .btn-outline-primary:hover {
+            background-color: var(--coinbase-blue);
+            color: white;
+        }
+        .card {
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            border: none;
+        }
+        .portfolio-card {
+            background-color: var(--coinbase-blue);
+            color: white;
+        }
+        .crypto-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+        }
+        .watchlist-item {
+            border-bottom: 1px solid #eee;
+            padding: 12px 0;
+        }
+        .price-up {
+            color: #16c784;
+        }
+        .price-down {
+            color: #ea3943;
+        }
+        .table {
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'dashboard' %}">
+                <i class="fab fa-bitcoin me-2"></i>BitHub
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'dashboard' %}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'asset_list' %}">Assets</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'transaction_history' %}">Activity</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'wallet_list' %}">Wallets</a>
+                    </li>
+                </ul>
+                <div class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            {{ request.user.username }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{% url 'profile' %}">Profile</a></li>
+                            <li><a class="dropdown-item" href="{% url 'payment_methods' %}">Payment Methods</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'logout' %}">Sign out</a></li>
+                        </ul>
+                    </li>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container py-4">
+        <!-- Portfolio Summary -->
+        <div class="row mb-4">
+            <div class="col-lg-8">
+                <div class="card portfolio-card">
+                    <div class="card-body">
+                        <h5 class="card-title">Your portfolio</h5>
+                        <h2 class="mb-4">${{ portfolio_value|floatformat:2 }}</h2>
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <a href="#" class="btn btn-light btn-sm">
+                                    <i class="fas fa-plus me-1"></i> Add funds
+                                </a>
+                            </div>
+                            <div>
+                                <a href="#" class="btn btn-outline-light btn-sm me-2">
+                                    <i class="fas fa-paper-plane me-1"></i> Send
+                                </a>
+                                <a href="#" class="btn btn-outline-light btn-sm me-2">
+                                    <i class="fas fa-exchange-alt me-1"></i> Convert
+                                </a>
+                                <a href="#" class="btn btn-outline-light btn-sm">
+                                    <i class="fas fa-ellipsis-h"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Quick Actions</h5>
+                        <div class="d-grid gap-2">
+                            <a href="#" class="btn btn-primary">
+                                <i class="fas fa-shopping-cart me-2"></i>Buy crypto
+                            </a>
+                            <a href="#" class="btn btn-outline-primary">
+                                <i class="fas fa-hand-holding-usd me-2"></i>Sell crypto
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Watchlist and Assets -->
+        <div class="row mb-4">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Watchlist</h5>
+                        <a href="#" class="btn btn-sm btn-light">Edit</a>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Asset</th>
+                                        <th>Price</th>
+                                        <th>Change (24h)</th>
+                                        <th>Market Cap</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for crypto in watchlist.currencies.all %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                {% if crypto.icon %}
+                                                <img src="{{ crypto.icon.url }}" alt="{{ crypto.name }}" class="crypto-icon me-2">
+                                                {% else %}
+                                                <div class="crypto-icon bg-light me-2 d-flex align-items-center justify-content-center">
+                                                    <i class="fab fa-bitcoin text-secondary"></i>
+                                                </div>
+                                                {% endif %}
+                                                <div>
+                                                    <a href="{% url 'crypto_detail' crypto.code %}" class="text-decoration-none">
+                                                        <strong>{{ crypto.code }}</strong><br>
+                                                        <small class="text-muted">{{ crypto.name }}</small>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>${{ crypto.current_price_usd|floatformat:2 }}</td>
+                                        <td class="{% if crypto.price_change_24h_percent > 0 %}price-up{% elif crypto.price_change_24h_percent < 0 %}price-down{% endif %}">
+                                            {{ crypto.price_change_24h_percent|floatformat:2 }}%
+                                        </td>
+                                        <td>${{ crypto.market_cap_usd|floatformat:0 }}</td>
+                                        <td>
+                                            <div class="btn-group">
+                                                <a href="{% url 'buy_crypto' crypto.code %}" class="btn btn-sm btn-primary">Buy</a>
+                                                <a href="{% url 'sell_crypto' crypto.code %}" class="btn btn-sm btn-outline-primary">Sell</a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="text-center py-3">
+                                            No cryptocurrencies in your watchlist yet.
+                                            <a href="{% url 'asset_list' %}">Browse assets</a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Recent Transactions</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush">
+                            {% for transaction in recent_transactions %}
+                            <a href="{% url 'transaction_detail' transaction.id %}" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <div>
+                                        <h6 class="mb-1">{{ transaction.get_transaction_type_display }} {{ transaction.currency }}</h6>
+                                        <small class="text-muted">{{ transaction.amount }} {{ transaction.currency }}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <strong>${{ transaction.native_amount|floatformat:2 }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ transaction.created_at|date:"M d, Y" }}</small>
+                                    </div>
+                                </div>
+                            </a>
+                            {% empty %}
+                            <div class="list-group-item">
+                                <p class="text-center mb-0">No recent transactions</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="card-footer text-center">
+                        <a href="{% url 'transaction_history' %}" class="btn btn-sm btn-link">View all activity</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Cryptocurrencies -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Top Cryptocurrencies</h5>
+                        <a href="{% url 'asset_list' %}" class="btn btn-sm btn-link">See all assets</a>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Asset</th>
+                                        <th>Price</th>
+                                        <th>Change (24h)</th>
+                                        <th>Market Cap</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for crypto in top_cryptos %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                {% if crypto.icon %}
+                                                <img src="{{ crypto.icon.url }}" alt="{{ crypto.name }}" class="crypto-icon me-2">
+                                                {% else %}
+                                                <div class="crypto-icon bg-light me-2 d-flex align-items-center justify-content-center">
+                                                    <i class="fab fa-bitcoin text-secondary"></i>
+                                                </div>
+                                                {% endif %}
+                                                <div>
+                                                    <a href="{% url 'crypto_detail' crypto.code %}" class="text-decoration-none">
+                                                        <strong>{{ crypto.code }}</strong><br>
+                                                        <small class="text-muted">{{ crypto.name }}</small>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>${{ crypto.current_price_usd|floatformat:2 }}</td>
+                                        <td class="{% if crypto.price_change_24h_percent > 0 %}price-up{% elif crypto.price_change_24h_percent < 0 %}price-down{% endif %}">
+                                            {{ crypto.price_change_24h_percent|floatformat:2 }}%
+                                        </td>
+                                        <td>${{ crypto.market_cap_usd|floatformat:0 }}</td>
+                                        <td>
+                                            <div class="btn-group">
+                                                <a href="{% url 'buy_crypto' crypto.code %}" class="btn btn-sm btn-primary">Buy</a>
+                                                <a href="{% url 'sell_crypto' crypto.code %}" class="btn btn-sm btn-outline-primary">Sell</a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="text-center py-3">
+                                            No cryptocurrencies available.
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white py-4 mt-4 border-top">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-0">© 2023 BitHub. All rights reserved.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <a href="#" class="text-muted me-3">Terms of Service</a>
+                    <a href="#" class="text-muted">Privacy Policy</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

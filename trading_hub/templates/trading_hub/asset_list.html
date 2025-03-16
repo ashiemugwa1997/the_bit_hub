@@ -1,0 +1,238 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assets - BitHub</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --coinbase-blue: #0052FF;
+            --coinbase-dark: #05123D;
+            --coinbase-light-bg: #F7F8FA;
+        }
+        body {
+            background-color: var(--coinbase-light-bg);
+            font-family: 'Inter', sans-serif;
+        }
+        .navbar {
+            background-color: #ffffff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .navbar-brand {
+            font-weight: 600;
+            color: var(--coinbase-blue);
+        }
+        .nav-link {
+            color: #333;
+            font-weight: 500;
+        }
+        .nav-link:hover {
+            color: var(--coinbase-blue);
+        }
+        .nav-link.active {
+            color: var(--coinbase-blue);
+        }
+        .btn-primary {
+            background-color: var(--coinbase-blue);
+            border-color: var(--coinbase-blue);
+        }
+        .btn-outline-primary {
+            border-color: var(--coinbase-blue);
+            color: var(--coinbase-blue);
+        }
+        .btn-outline-primary:hover {
+            background-color: var(--coinbase-blue);
+            color: white;
+        }
+        .card {
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            border: none;
+        }
+        .crypto-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+        }
+        .price-up {
+            color: #16c784;
+        }
+        .price-down {
+            color: #ea3943;
+        }
+        .table {
+            font-size: 14px;
+        }
+        .search-container {
+            max-width: 400px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'dashboard' %}">
+                <i class="fab fa-bitcoin me-2"></i>BitHub
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'dashboard' %}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'asset_list' %}">Assets</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'transaction_history' %}">Activity</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'wallet_list' %}">Wallets</a>
+                    </li>
+                </ul>
+                <div class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            {{ request.user.username }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{% url 'profile' %}">Profile</a></li>
+                            <li><a class="dropdown-item" href="{% url 'payment_methods' %}">Payment Methods</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'logout' %}">Sign out</a></li>
+                        </ul>
+                    </li>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="mb-0">All assets</h1>
+            <div class="search-container">
+                <div class="input-group">
+                    <input type="text" id="cryptoSearch" class="form-control" placeholder="Search assets...">
+                    <button class="btn btn-outline-secondary" type="button">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assets Table -->
+        <div class="card">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table mb-0" id="assetTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 35%">Name</th>
+                                <th>Price</th>
+                                <th>Change (24h)</th>
+                                <th>Market Cap</th>
+                                <th>Your Balance</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for crypto in cryptocurrencies %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% if crypto.icon %}
+                                        <img src="{{ crypto.icon.url }}" alt="{{ crypto.name }}" class="crypto-icon me-3">
+                                        {% else %}
+                                        <div class="crypto-icon bg-light me-3 d-flex align-items-center justify-content-center">
+                                            <i class="fab fa-bitcoin text-secondary"></i>
+                                        </div>
+                                        {% endif %}
+                                        <div>
+                                            <a href="{% url 'crypto_detail' crypto.code %}" class="text-decoration-none">
+                                                <strong>{{ crypto.name }}</strong><br>
+                                                <span class="text-muted">{{ crypto.code }}</span>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>${{ crypto.current_price_usd|floatformat:2 }}</td>
+                                <td class="{% if crypto.price_change_24h_percent > 0 %}price-up{% elif crypto.price_change_24h_percent < 0 %}price-down{% endif %}">
+                                    {% if crypto.price_change_24h_percent > 0 %}
+                                    <i class="fas fa-caret-up me-1"></i>
+                                    {% else %}
+                                    <i class="fas fa-caret-down me-1"></i>
+                                    {% endif %}
+                                    {{ crypto.price_change_24h_percent|floatformat:2 }}%
+                                </td>
+                                <td>${{ crypto.market_cap_usd|floatformat:0 }}</td>
+                                <td>
+                                    {% if crypto.code in user_balances %}
+                                    <div>
+                                        <strong>{{ user_balances|get_item:crypto.code|floatformat:8 }} {{ crypto.code }}</strong>
+                                        <br>
+                                        <small class="text-muted">
+                                            ${{ user_balances|get_item:crypto.code|multiply:crypto.current_price_usd|floatformat:2 }}
+                                        </small>
+                                    </div>
+                                    {% else %}
+                                    <span class="text-muted">No balance</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{% url 'buy_crypto' crypto.code %}" class="btn btn-sm btn-primary">Buy</a>
+                                        <a href="{% url 'sell_crypto' crypto.code %}" class="btn btn-sm btn-outline-primary">Sell</a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white py-4 mt-4 border-top">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-0">© 2025 BitHub. All rights reserved.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <a href="#" class="text-muted me-3">Terms of Service</a>
+                    <a href="#" class="text-muted">Privacy Policy</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Search functionality
+        document.getElementById('cryptoSearch').addEventListener('keyup', function() {
+            const searchText = this.value.toLowerCase();
+            const rows = document.querySelectorAll('#assetTable tbody tr');
+            
+            rows.forEach(row => {
+                const name = row.querySelector('td:first-child strong').textContent.toLowerCase();
+                const symbol = row.querySelector('td:first-child span').textContent.toLowerCase();
+                
+                if (name.includes(searchText) || symbol.includes(searchText)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

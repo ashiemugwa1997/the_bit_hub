@@ -1,0 +1,412 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ crypto.name }} ({{ crypto.code }}) | BitHub</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --coinbase-blue: #0052FF;
+            --coinbase-dark: #05123D;
+            --coinbase-light-bg: #F7F8FA;
+        }
+        body {
+            background-color: var(--coinbase-light-bg);
+            font-family: 'Inter', sans-serif;
+        }
+        .navbar {
+            background-color: #ffffff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .navbar-brand {
+            font-weight: 600;
+            color: var(--coinbase-blue);
+        }
+        .nav-link {
+            color: #333;
+            font-weight: 500;
+        }
+        .nav-link:hover {
+            color: var(--coinbase-blue);
+        }
+        .btn-primary {
+            background-color: var(--coinbase-blue);
+            border-color: var(--coinbase-blue);
+        }
+        .btn-outline-primary {
+            border-color: var(--coinbase-blue);
+            color: var(--coinbase-blue);
+        }
+        .btn-outline-primary:hover {
+            background-color: var(--coinbase-blue);
+            color: white;
+        }
+        .card {
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            border: none;
+        }
+        .crypto-header {
+            padding: 24px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .crypto-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+        }
+        .price-up {
+            color: #16c784;
+        }
+        .price-down {
+            color: #ea3943;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        .period-selector {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .period-selector .btn {
+            border-radius: 30px;
+            padding: 6px 16px;
+            margin: 0 4px;
+        }
+        .table {
+            font-size: 14px;
+        }
+        .watchlist-button {
+            cursor: pointer;
+        }
+        .watchlist-button i {
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'dashboard' %}">
+                <i class="fab fa-bitcoin me-2"></i>BitHub
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'dashboard' %}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'asset_list' %}">Assets</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'transaction_history' %}">Activity</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'wallet_list' %}">Wallets</a>
+                    </li>
+                </ul>
+                <div class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            {{ request.user.username }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{% url 'profile' %}">Profile</a></li>
+                            <li><a class="dropdown-item" href="{% url 'payment_methods' %}">Payment Methods</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'logout' %}">Sign out</a></li>
+                        </ul>
+                    </li>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container py-4">
+        <!-- Crypto Header -->
+        <div class="crypto-header">
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <div class="d-flex align-items-center">
+                        {% if crypto.icon %}
+                        <img src="{{ crypto.icon.url }}" alt="{{ crypto.name }}" class="crypto-icon me-3">
+                        {% else %}
+                        <div class="crypto-icon bg-light me-3 d-flex align-items-center justify-content-center">
+                            <i class="fab fa-bitcoin fs-1 text-secondary"></i>
+                        </div>
+                        {% endif %}
+                        <div>
+                            <h1 class="mb-0">{{ crypto.name }}</h1>
+                            <p class="text-muted mb-0">{{ crypto.code }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 text-lg-end mt-3 mt-lg-0">
+                    <button class="btn btn-outline-secondary btn-sm me-2 watchlist-button" id="watchlistToggle">
+                        <i class="far fa-star"></i> Add to Watchlist
+                    </button>
+                    <a href="#" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-share-alt"></i> Share
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-lg-8">
+                <!-- Price Chart Section -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div>
+                                <h2 class="mb-1">${{ crypto.current_price_usd|floatformat:2 }}</h2>
+                                <div class="{% if crypto.price_change_24h_percent > 0 %}price-up{% elif crypto.price_change_24h_percent < 0 %}price-down{% endif %}">
+                                    {% if crypto.price_change_24h_percent > 0 %}
+                                    <i class="fas fa-caret-up me-1"></i>
+                                    {% else %}
+                                    <i class="fas fa-caret-down me-1"></i>
+                                    {% endif %}
+                                    {{ crypto.price_change_24h_percent|floatformat:2 }}% (24h)
+                                </div>
+                            </div>
+                            <div class="d-flex">
+                                <a href="{% url 'buy_crypto' crypto.code %}" class="btn btn-primary me-2">Buy</a>
+                                <a href="{% url 'sell_crypto' crypto.code %}" class="btn btn-outline-primary me-2">Sell</a>
+                                <a href="{% url 'send_crypto' crypto.code %}" class="btn btn-outline-primary">Send</a>
+                            </div>
+                        </div>
+
+                        <div class="period-selector">
+                            <button class="btn btn-sm btn-primary" data-period="day">1D</button>
+                            <button class="btn btn-sm btn-outline-secondary" data-period="week">1W</button>
+                            <button class="btn btn-sm btn-outline-secondary" data-period="month">1M</button>
+                            <button class="btn btn-sm btn-outline-secondary" data-period="year">1Y</button>
+                            <button class="btn btn-sm btn-outline-secondary" data-period="all">All</button>
+                        </div>
+
+                        <div class="chart-container">
+                            <canvas id="priceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- About Section -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h3 class="card-title">About {{ crypto.name }}</h3>
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <h6>Market Cap</h6>
+                                <p>${{ crypto.market_cap_usd|floatformat:0 }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>24h Trading Volume</h6>
+                                <p>${{ crypto.volume_24h_usd|floatformat:0 }}</p>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <h6>Description</h6>
+                            {% if crypto.code == 'BTC' %}
+                            <p>Bitcoin is the first digital currency to allow users to send and receive money, without an intermediary bank or third party. Instead, a network of thousands of computers worldwide validate transactions through a consensus mechanism called "proof-of-work." Bitcoin was created in 2009 by a pseudonymous developer named Satoshi Nakamoto. The idea behind the cryptocurrency was to create an electronic cash system that didn't rely on a central authority.</p>
+                            {% elif crypto.code == 'ETH' %}
+                            <p>Ethereum is a decentralized computing platform that uses ETH (also called Ether) to pay transaction fees (or "gas"). Ethereum is programmable, meaning that developers can use it to build apps and organizations with their own rules and record of transactions. It is secured by its own cryptocurrency called Ether (ETH).</p>
+                            {% else %}
+                            <p>{{ crypto.name }} ({{ crypto.code }}) is a cryptocurrency token that operates on a blockchain network. Learn more about this asset by researching its whitepaper and technology.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <!-- Your Wallet Section -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Your {{ crypto.name }} Wallet</h5>
+                        {% if wallet %}
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <div>
+                                <h4>{{ wallet.balance }} {{ crypto.code }}</h4>
+                                <p class="text-muted mb-0">≈ ${{ wallet.balance|floatformat:8|multiply:crypto.current_price_usd|floatformat:2 }}</p>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-3">
+                            <p class="mb-3">You don't have a {{ crypto.name }} wallet yet.</p>
+                            <a href="{% url 'buy_crypto' crypto.code %}" class="btn btn-primary">Buy {{ crypto.code }}</a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Recent Transactions -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Your {{ crypto.code }} Activity</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush">
+                            {% for transaction in transactions %}
+                            <a href="{% url 'transaction_detail' transaction.id %}" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <div>
+                                        <h6 class="mb-1">{{ transaction.get_transaction_type_display }}</h6>
+                                        <small class="text-muted">{{ transaction.amount }} {{ transaction.currency }}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <strong>${{ transaction.native_amount|floatformat:2 }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ transaction.created_at|date:"M d, Y" }}</small>
+                                    </div>
+                                </div>
+                            </a>
+                            {% empty %}
+                            <div class="list-group-item">
+                                <p class="text-center mb-0">No {{ crypto.code }} transactions yet</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white py-4 mt-4 border-top">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-0">© 2023 BitHub. All rights reserved.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <a href="#" class="text-muted me-3">Terms of Service</a>
+                    <a href="#" class="text-muted">Privacy Policy</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Price Chart
+        const ctx = document.getElementById('priceChart').getContext('2d');
+        let priceChart = null;
+        
+        // Function to load chart data
+        async function loadChartData(period = 'day') {
+            try {
+                const response = await fetch(`/coinbase/api/price-history/{{ crypto.code }}/${period}/`);
+                const data = await response.json();
+                
+                if (priceChart) {
+                    priceChart.destroy();
+                }
+                
+                priceChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        datasets: [{
+                            label: '{{ crypto.code }} Price',
+                            data: data.data,
+                            borderColor: '#0052FF',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            tension: 0.1,
+                            fill: false
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: {
+                                    unit: period === 'day' ? 'hour' : 
+                                          period === 'week' ? 'day' : 
+                                          period === 'month' ? 'day' : 'month'
+                                }
+                            },
+                            y: {
+                                beginAtZero: false
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading chart data:', error);
+            }
+        }
+        
+        // Initialize chart
+        document.addEventListener('DOMContentLoaded', function() {
+            loadChartData('day');
+            
+            // Period selector buttons
+            document.querySelectorAll('.period-selector button').forEach(button => {
+                button.addEventListener('click', function() {
+                    // Remove active class from all buttons
+                    document.querySelectorAll('.period-selector button').forEach(btn => {
+                        btn.classList.remove('btn-primary');
+                        btn.classList.add('btn-outline-secondary');
+                    });
+                    
+                    // Add active class to clicked button
+                    this.classList.remove('btn-outline-secondary');
+                    this.classList.add('btn-primary');
+                    
+                    // Load chart data for selected period
+                    const period = this.getAttribute('data-period');
+                    loadChartData(period);
+                });
+            });
+            
+            // Watchlist toggle
+            const watchlistButton = document.getElementById('watchlistToggle');
+            if (watchlistButton) {
+                watchlistButton.addEventListener('click', async function() {
+                    try {
+                        const response = await fetch(`/coinbase/api/watchlist-toggle/{{ crypto.code }}/`, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRFToken': getCookie('csrftoken'),
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.added) {
+                            this.innerHTML = '<i class="fas fa-star"></i> In Watchlist';
+                        } else {
+                            this.innerHTML = '<i class="far fa-star"></i> Add to Watchlist';
+                        }
+                    } catch (error) {
+                        console.error('Error toggling watchlist:', error);
+                    }
+                });
+            }
+        });
+        
+        // Helper function to get CSRF token from cookies
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+    </script>
+</body>
+</html>

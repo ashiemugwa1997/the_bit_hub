@@ -1,0 +1,184 @@
+{% extends "trading_hub/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-4">Limit Orders</h2>
+    
+    <!-- Open Orders -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Open Orders</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Asset</th>
+                            <th>Amount</th>
+                            <th>Limit Price</th>
+                            <th>Total</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in open_orders %}
+                        <tr>
+                            <td>{{ order.created_at|date:"M d, Y H:i" }}</td>
+                            <td>
+                                <span class="badge {% if order.side == 'buy' %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ order.side|upper }}
+                                </span>
+                            </td>
+                            <td>{{ order.cryptocurrency.code }}</td>
+                            <td>{{ order.amount|floatformat:8 }}</td>
+                            <td>${{ order.limit_price|floatformat:2 }}</td>
+                            <td>${{ order.amount|multiply:order.limit_price|floatformat:2 }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-danger cancel-order" data-order-id="{{ order.id }}">
+                                    Cancel
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-3">No open orders</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filled Orders -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Filled Orders</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Asset</th>
+                            <th>Amount</th>
+                            <th>Limit Price</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in filled_orders %}
+                        <tr>
+                            <td>{{ order.updated_at|date:"M d, Y H:i" }}</td>
+                            <td>
+                                <span class="badge {% if order.side == 'buy' %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ order.side|upper }}
+                                </span>
+                            </td>
+                            <td>{{ order.cryptocurrency.code }}</td>
+                            <td>{{ order.amount|floatformat:8 }}</td>
+                            <td>${{ order.limit_price|floatformat:2 }}</td>
+                            <td>${{ order.amount|multiply:order.limit_price|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-3">No filled orders</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Other Orders (Cancelled/Expired) -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Other Orders</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Asset</th>
+                            <th>Amount</th>
+                            <th>Limit Price</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in other_orders %}
+                        <tr>
+                            <td>{{ order.updated_at|date:"M d, Y H:i" }}</td>
+                            <td>
+                                <span class="badge {% if order.side == 'buy' %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ order.side|upper }}
+                                </span>
+                            </td>
+                            <td>{{ order.cryptocurrency.code }}</td>
+                            <td>{{ order.amount|floatformat:8 }}</td>
+                            <td>${{ order.limit_price|floatformat:2 }}</td>
+                            <td>
+                                <span class="badge bg-secondary">{{ order.status|upper }}</span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-3">No cancelled or expired orders</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle cancel order buttons
+    document.querySelectorAll('.cancel-order').forEach(button => {
+        button.addEventListener('click', async function() {
+            if (confirm('Are you sure you want to cancel this order?')) {
+                const orderId = this.getAttribute('data-order-id');
+                try {
+                    const response = await fetch(`/coinbase/limit-order/${orderId}/cancel/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': getCookie('csrftoken')
+                        }
+                    });
+                    
+                    const data = await response.json();
+                    if (data.status === 'success') {
+                        // Reload page to show updated order status
+                        window.location.reload();
+                    } else {
+                        alert('Failed to cancel order: ' + data.message);
+                    }
+                } catch (error) {
+                    console.error('Error cancelling order:', error);
+                    alert('An error occurred while cancelling the order');
+                }
+            }
+        });
+    });
+    
+    // Helper function to get CSRF token
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+});
+</script>
+{% endblock %}
