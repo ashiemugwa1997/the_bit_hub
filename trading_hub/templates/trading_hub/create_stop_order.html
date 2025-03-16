@@ -7,7 +7,7 @@
         <div class="col-md-8 mx-auto">
             <div class="card">
                 <div class="card-header">
-                    <h4 class="mb-0">Create Stop Order - {{ crypto.name }}</h4>
+                    <h4 class="mb-0">Create {% if request.GET.stop_limit %}Stop-Limit{% else %}Stop{% endif %} Order - {{ crypto.name }}</h4>
                 </div>
                 <div class="card-body">
                     {% if error %}
@@ -24,11 +24,11 @@
                         <div class="mb-3">
                             <label class="form-label">Order Type</label>
                             <div class="btn-group w-100" role="group">
-                                <input type="radio" class="btn-check" name="side" id="buy" value="buy" checked>
-                                <label class="btn btn-outline-primary" for="buy">Stop Buy</label>
+                                <input type="radio" class="btn-check" name="side" id="buy" value="buy" {% if request.GET.side == 'buy' %}checked{% endif %}>
+                                <label class="btn btn-outline-primary" for="buy">{% if request.GET.stop_limit %}Stop-Limit{% else %}Stop{% endif %} Buy</label>
                                 
-                                <input type="radio" class="btn-check" name="side" id="sell" value="sell">
-                                <label class="btn btn-outline-primary" for="sell">Stop Sell</label>
+                                <input type="radio" class="btn-check" name="side" id="sell" value="sell" {% if request.GET.side == 'sell' %}checked{% endif %}>
+                                <label class="btn btn-outline-primary" for="sell">{% if request.GET.stop_limit %}Stop-Limit{% else %}Stop{% endif %} Sell</label>
                             </div>
                         </div>
                         
@@ -44,11 +44,13 @@
                             <div class="form-text" id="stopInfo"></div>
                         </div>
                         
+                        {% if request.GET.stop_limit %}
                         <div class="mb-3">
-                            <label for="limit_price" class="form-label">Limit Price (USD) - Optional</label>
-                            <input type="number" class="form-control" id="limit_price" name="limit_price" step="0.01">
-                            <div class="form-text">Set a limit price to create a stop-limit order. Leave empty for a standard stop order.</div>
+                            <label for="limit_price" class="form-label">Limit Price (USD)</label>
+                            <input type="number" class="form-control" id="limit_price" name="limit_price" step="0.01" required>
+                            <div class="form-text" id="limitInfo">The price at which your order will be executed after the stop price is reached</div>
                         </div>
+                        {% endif %}
                         
                         <div class="mb-3">
                             <label for="expires_at" class="form-label">Expires At (Optional)</label>
@@ -57,7 +59,7 @@
                         </div>
                         
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary">Create Stop Order</button>
+                            <button type="submit" class="btn btn-primary">Create {% if request.GET.stop_limit %}Stop-Limit{% else %}Stop{% endif %} Order</button>
                             <a href="{% url 'crypto_detail' crypto.code %}" class="btn btn-outline-secondary">Cancel</a>
                         </div>
                     </form>
@@ -75,10 +77,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const limitPriceInput = document.getElementById('limit_price');
     const amountUsdValue = document.getElementById('amountUsdValue');
     const stopInfo = document.getElementById('stopInfo');
+    const limitInfo = document.getElementById('limitInfo');
     const sideInputs = document.querySelectorAll('input[name="side"]');
     
     // Set initial stop price to current market price
     stopPriceInput.value = currentPrice.toFixed(2);
+    if (limitPriceInput) {
+        limitPriceInput.value = currentPrice.toFixed(2);
+    }
     
     // Update USD value when amount or price changes
     function updateUsdValue() {
@@ -100,6 +106,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 stopInfo.textContent = 'Order will trigger when price rises to this level';
                 stopInfo.className = 'form-text';
             }
+            
+            if (limitPriceInput) {
+                const limitPrice = parseFloat(limitPriceInput.value) || currentPrice;
+                if (limitPrice >= stopPrice) {
+                    limitInfo.textContent = 'Limit price should be below stop price for buy orders';
+                    limitInfo.className = 'form-text text-danger';
+                } else {
+                    limitInfo.textContent = 'The price at which your order will be executed after the stop price is reached';
+                    limitInfo.className = 'form-text';
+                }
+            }
         } else {
             if (stopPrice >= currentPrice) {
                 stopInfo.textContent = 'Sell stop orders should be below the current market price';
@@ -107,6 +124,17 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 stopInfo.textContent = 'Order will trigger when price falls to this level';
                 stopInfo.className = 'form-text';
+            }
+            
+            if (limitPriceInput) {
+                const limitPrice = parseFloat(limitPriceInput.value) || currentPrice;
+                if (limitPrice <= stopPrice) {
+                    limitInfo.textContent = 'Limit price should be above stop price for sell orders';
+                    limitInfo.className = 'form-text text-danger';
+                } else {
+                    limitInfo.textContent = 'The price at which your order will be executed after the stop price is reached';
+                    limitInfo.className = 'form-text';
+                }
             }
         }
     }
@@ -116,6 +144,9 @@ document.addEventListener('DOMContentLoaded', function() {
         updateUsdValue();
         updateStopInfo();
     });
+    if (limitPriceInput) {
+        limitPriceInput.addEventListener('input', updateStopInfo);
+    }
     sideInputs.forEach(input => {
         input.addEventListener('change', updateStopInfo);
     });

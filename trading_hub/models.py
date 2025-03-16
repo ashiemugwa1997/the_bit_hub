@@ -2,16 +2,21 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from decimal import Decimal
+import uuid
 
 
-class TraderProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='trader_profile')
+class CoinbaseUser(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='coinbase_profile')
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=5.00)
     total_trades = models.PositiveIntegerField(default=0)
     successful_trades = models.PositiveIntegerField(default=0)
+    profile_picture = models.ImageField(upload_to='profile_pics/', null=True, blank=True)
+    phone_verified = models.BooleanField(default=False)
+    identity_verified = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.user.username}'s Profile (Rating: {self.rating})"
+        return f"{self.user.username}'s Coinbase Profile"
 
     def calculate_rating(self):
         if self.total_trades > 0:
@@ -25,36 +30,380 @@ class TraderProfile(models.Model):
 
 # Create trader profile when a user is created
 @receiver(post_save, sender=User)
-def create_trader_profile(sender, instance, created, **kwargs):
+def create_coinbase_user(sender, instance, created, **kwargs):
     if created:
-        TraderProfile.objects.create(user=instance)
+        CoinbaseUser.objects.create(user=instance)
 
 
 @receiver(post_save, sender=User)
-def save_trader_profile(sender, instance, **kwargs):
-    if hasattr(instance, 'trader_profile'):
-        instance.trader_profile.save()
+def save_coinbase_user(sender, instance, **kwargs):
+    if hasattr(instance, 'coinbase_profile'):
+        instance.coinbase_profile.save()
 
 
-class Trade(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='trades')
-    trade_type = models.CharField(max_length=10, choices=[('buy', 'Buy'), ('sell', 'Sell')])
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
-    date = models.DateTimeField(auto_now_add=True)
-    is_successful = models.BooleanField(default=False)
+class Wallet(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='wallets')
+    currency_code = models.CharField(max_length=10)  # BTC, ETH, USD, etc.
+    name = models.CharField(max_length=50, default="My Wallet")
+    balance = models.DecimalField(max_digits=24, decimal_places=8, default=0)
+    address = models.CharField(max_length=100, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.user.username} - {self.trade_type} - {self.amount} BTC at {self.price} USD"
+        return f"{self.user.username}'s {self.currency_code} Wallet ({self.balance})"
 
-    def complete_trade(self, successful=True):
-        """Mark a trade as complete and update trader rating"""
-        self.is_successful = successful
+
+class Transaction(models.Model):
+    TRANSACTION_TYPES = (
+        ('buy', 'Buy'),
+        ('sell', 'Sell'),
+        ('send', 'Send'),
+        ('receive', 'Receive'),
+        ('convert', 'Convert'),
+    )
+
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+        ('canceled', 'Canceled'),
+    )
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='transactions')
+    transaction_type = models.CharField(max_length=10, choices=TRANSACTION_TYPES)
+    amount = models.DecimalField(max_digits=24, decimal_places=8)
+    currency = models.CharField(max_length=10)  # BTC, ETH, etc.
+    native_amount = models.DecimalField(max_digits=24, decimal_places=2)  # Amount in USD or local currency
+    native_currency = models.CharField(max_length=5, default="USD")  # USD, EUR, etc.
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    description = models.TextField(blank=True, null=True)
+    to_wallet = models.ForeignKey(Wallet, on_delete=models.SET_NULL, related_name='incoming_transactions', null=True,
+                                  blank=True)
+    from_wallet = models.ForeignKey(Wallet, on_delete=models.SET_NULL, related_name='outgoing_transactions', null=True,
+                                    blank=True)
+
+    def __str__(self):
+        return f"{self.transaction_type} - {self.amount} {self.currency}"
+
+    def complete_transaction(self, successful=True):
+        """Mark a transaction as complete and update user profile"""
+        if successful:
+            self.status = 'completed'
+
+            # Update wallet balances
+            if self.transaction_type == 'buy':
+                self.to_wallet.balance += self.amount
+                self.to_wallet.save()
+            elif self.transaction_type == 'sell':
+                self.from_wallet.balance -= self.amount
+                self.from_wallet.save()
+            elif self.transaction_type == 'send':
+                self.from_wallet.balance -= self.amount
+                self.from_wallet.save()
+                if self.to_wallet:
+                    self.to_wallet.balance += self.amount
+                    self.to_wallet.save()
+            elif self.transaction_type == 'receive':
+                self.to_wallet.balance += self.amount
+                self.to_wallet.save()
+        else:
+            self.status = 'failed'
+
         self.save()
 
         # Update trader profile
-        profile = self.user.trader_profile
+        profile = self.user.coinbase_profile
         profile.total_trades += 1
         if successful:
             profile.successful_trades += 1
         profile.calculate_rating()
+
+
+class CryptoCurrency(models.Model):
+    code = models.CharField(max_length=10, primary_key=True)  # BTC, ETH, etc.
+    name = models.CharField(max_length=50)  # Bitcoin, Ethereum, etc.
+    current_price_usd = models.DecimalField(max_digits=24, decimal_places=2)
+    market_cap_usd = models.DecimalField(max_digits=24, decimal_places=2, null=True, blank=True)
+    volume_24h_usd = models.DecimalField(max_digits=24, decimal_places=2, null=True, blank=True)
+    price_change_24h_percent = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True)
+    icon = models.ImageField(upload_to='crypto_icons/', null=True, blank=True)
+    last_updated = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.code})"
+
+
+class WatchList(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='watch_lists')
+    currencies = models.ManyToManyField(CryptoCurrency, related_name='in_watch_lists')
+    name = models.CharField(max_length=50, default="My Watchlist")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username}'s {self.name}"
+
+
+# For Price Chart Data
+class PriceHistory(models.Model):
+    TIME_PERIODS = (
+        ('day', 'Day'),
+        ('week', 'Week'),
+        ('month', 'Month'),
+        ('year', 'Year'),
+        ('all', 'All Time'),
+    )
+
+    currency = models.ForeignKey(CryptoCurrency, on_delete=models.CASCADE, related_name='price_history')
+    price_usd = models.DecimalField(max_digits=24, decimal_places=2)
+    timestamp = models.DateTimeField()
+    period = models.CharField(max_length=10, choices=TIME_PERIODS)
+
+    def __str__(self):
+        return f"{self.currency.code} price at {self.timestamp}"
+
+
+# Payment Methods (like in Coinbase)
+class PaymentMethod(models.Model):
+    METHOD_TYPES = (
+        ('bank', 'Bank Account'),
+        ('card', 'Credit/Debit Card'),
+        ('paypal', 'PayPal'),
+    )
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='payment_methods')
+    name = models.CharField(max_length=100)  # "Chase Bank Account", "Visa ending in 1234"
+    method_type = models.CharField(max_length=10, choices=METHOD_TYPES)
+    is_default = models.BooleanField(default=False)
+    last_four = models.CharField(max_length=4, blank=True, null=True)  # Last 4 digits of card or account
+    expires = models.DateField(null=True, blank=True)  # For cards
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username}'s {self.name}"
+
+
+class LimitOrder(models.Model):
+    ORDER_STATUS = (
+        ('open', 'Open'),
+        ('filled', 'Filled'),
+        ('cancelled', 'Cancelled'),
+        ('expired', 'Expired')
+    )
+    
+    SIDE_CHOICES = (
+        ('buy', 'Buy'),
+        ('sell', 'Sell')
+    )
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='limit_orders')
+    cryptocurrency = models.ForeignKey(CryptoCurrency, on_delete=models.CASCADE)
+    side = models.CharField(max_length=4, choices=SIDE_CHOICES)
+    amount = models.DecimalField(max_digits=24, decimal_places=8)
+    limit_price = models.DecimalField(max_digits=24, decimal_places=2)
+    filled_amount = models.DecimalField(max_digits=24, decimal_places=8, default=0)
+    status = models.CharField(max_length=10, choices=ORDER_STATUS, default='open')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    from_wallet = models.ForeignKey(Wallet, on_delete=models.CASCADE, related_name='limit_order_source')
+    to_wallet = models.ForeignKey(Wallet, on_delete=models.CASCADE, related_name='limit_order_destination', null=True, blank=True)
+    
+    def __str__(self):
+        return f"{self.side.upper()} {self.amount} {self.cryptocurrency.code} @ {self.limit_price}"
+    
+    def can_execute(self):
+        """Check if the order can be executed based on current market price"""
+        current_price = self.cryptocurrency.current_price_usd
+        if self.side == 'buy':
+            return current_price <= self.limit_price
+        else:  # sell
+            return current_price >= self.limit_price
+    
+    def try_execute(self):
+        """Attempt to execute the limit order if conditions are met"""
+        if not self.can_execute() or self.status != 'open':
+            return False
+            
+        try:
+            if self.side == 'buy':
+                usd_needed = (self.amount - self.filled_amount) * self.limit_price
+                if self.from_wallet.balance >= usd_needed:
+                    # Create transaction for the buy
+                    transaction = Transaction.objects.create(
+                        user=self.user,
+                        transaction_type='buy',
+                        amount=self.amount - self.filled_amount,
+                        currency=self.cryptocurrency.code,
+                        native_amount=usd_needed,
+                        native_currency='USD',
+                        from_wallet=self.from_wallet,
+                        to_wallet=self.to_wallet,
+                        description=f"Limit order buy executed at {self.limit_price}"
+                    )
+                    transaction.complete_transaction(successful=True)
+                    self.filled_amount = self.amount
+                    self.status = 'filled'
+                    self.save()
+                    return True
+            else:  # sell
+                crypto_available = self.from_wallet.balance
+                if crypto_available >= (self.amount - self.filled_amount):
+                    # Create transaction for the sell
+                    usd_value = (self.amount - self.filled_amount) * self.limit_price
+                    transaction = Transaction.objects.create(
+                        user=self.user,
+                        transaction_type='sell',
+                        amount=self.amount - self.filled_amount,
+                        currency=self.cryptocurrency.code,
+                        native_amount=usd_value,
+                        native_currency='USD',
+                        from_wallet=self.from_wallet,
+                        to_wallet=self.to_wallet,
+                        description=f"Limit order sell executed at {self.limit_price}"
+                    )
+                    transaction.complete_transaction(successful=True)
+                    self.filled_amount = self.amount
+                    self.status = 'filled'
+                    self.save()
+                    return True
+                    
+        except Exception as e:
+            print(f"Error executing limit order: {e}")
+            return False
+            
+        return False
+    
+    def cancel(self):
+        """Cancel an open limit order"""
+        if self.status == 'open':
+            self.status = 'cancelled'
+            self.save()
+            return True
+        return False
+
+
+class StopOrder(models.Model):
+    ORDER_STATUS = (
+        ('open', 'Open'),
+        ('triggered', 'Triggered'),  # When stop price is reached but not yet executed
+        ('filled', 'Filled'),
+        ('cancelled', 'Cancelled'),
+        ('expired', 'Expired')
+    )
+    
+    SIDE_CHOICES = (
+        ('buy', 'Buy'),
+        ('sell', 'Sell')
+    )
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='stop_orders')
+    cryptocurrency = models.ForeignKey(CryptoCurrency, on_delete=models.CASCADE)
+    side = models.CharField(max_length=4, choices=SIDE_CHOICES)
+    amount = models.DecimalField(max_digits=24, decimal_places=8)
+    stop_price = models.DecimalField(max_digits=24, decimal_places=2)  # Price that triggers the order
+    limit_price = models.DecimalField(max_digits=24, decimal_places=2, null=True, blank=True)  # Optional limit price for stop-limit orders
+    filled_amount = models.DecimalField(max_digits=24, decimal_places=8, default=0)
+    status = models.CharField(max_length=10, choices=ORDER_STATUS, default='open')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    from_wallet = models.ForeignKey(Wallet, on_delete=models.CASCADE, related_name='stop_order_source')
+    to_wallet = models.ForeignKey(Wallet, on_delete=models.CASCADE, related_name='stop_order_destination', null=True, blank=True)
+    
+    def __str__(self):
+        order_type = "Stop-Limit" if self.limit_price else "Stop"
+        return f"{order_type} {self.side.upper()} {self.amount} {self.cryptocurrency.code} @ {self.stop_price}"
+    
+    def should_trigger(self):
+        """Check if the stop order should be triggered based on current market price"""
+        current_price = self.cryptocurrency.current_price_usd
+        if self.side == 'buy':
+            # Buy stop triggers when price rises above stop price
+            return current_price >= self.stop_price
+        else:  # sell
+            # Sell stop triggers when price falls below stop price
+            return current_price <= self.stop_price
+    
+    def try_trigger(self):
+        """Attempt to trigger the stop order if conditions are met"""
+        if not self.should_trigger() or self.status != 'open':
+            return False
+            
+        # Update status to triggered
+        self.status = 'triggered'
+        self.save()
+        
+        # If it's a stop-limit order, create a limit order
+        if self.limit_price:
+            limit_order = LimitOrder.objects.create(
+                user=self.user,
+                cryptocurrency=self.cryptocurrency,
+                side=self.side,
+                amount=self.amount,
+                limit_price=self.limit_price,
+                from_wallet=self.from_wallet,
+                to_wallet=self.to_wallet,
+                expires_at=self.expires_at
+            )
+            return True
+            
+        # Otherwise execute as market order
+        try:
+            if self.side == 'buy':
+                usd_needed = self.amount * self.cryptocurrency.current_price_usd
+                if self.from_wallet.balance >= usd_needed:
+                    transaction = Transaction.objects.create(
+                        user=self.user,
+                        transaction_type='buy',
+                        amount=self.amount,
+                        currency=self.cryptocurrency.code,
+                        native_amount=usd_needed,
+                        native_currency='USD',
+                        from_wallet=self.from_wallet,
+                        to_wallet=self.to_wallet,
+                        description=f"Stop order buy executed at market price {self.cryptocurrency.current_price_usd}"
+                    )
+                    transaction.complete_transaction(successful=True)
+                    self.filled_amount = self.amount
+                    self.status = 'filled'
+                    self.save()
+                    return True
+            else:  # sell
+                crypto_available = self.from_wallet.balance
+                if crypto_available >= self.amount:
+                    usd_value = self.amount * self.cryptocurrency.current_price_usd
+                    transaction = Transaction.objects.create(
+                        user=self.user,
+                        transaction_type='sell',
+                        amount=self.amount,
+                        currency=self.cryptocurrency.code,
+                        native_amount=usd_value,
+                        native_currency='USD',
+                        from_wallet=self.from_wallet,
+                        to_wallet=self.to_wallet,
+                        description=f"Stop order sell executed at market price {self.cryptocurrency.current_price_usd}"
+                    )
+                    transaction.complete_transaction(successful=True)
+                    self.filled_amount = self.amount
+                    self.status = 'filled'
+                    self.save()
+                    return True
+                    
+        except Exception as e:
+            print(f"Error executing stop order: {e}")
+            return False
+            
+        return False
+    
+    def cancel(self):
+        """Cancel an open stop order"""
+        if self.status == 'open':
+            self.status = 'cancelled'
+            self.save()
+            return True
+        return False

@@ -181,9 +181,31 @@
                                     {{ crypto.price_change_24h_percent|floatformat:2 }}% (24h)
                                 </div>
                             </div>
-                            <div class="d-flex">
-                                <a href="{% url 'buy_crypto' crypto.code %}" class="btn btn-primary me-2">Buy</a>
-                                <a href="{% url 'sell_crypto' crypto.code %}" class="btn btn-outline-primary me-2">Sell</a>
+                            <div class="d-flex gap-2">
+                                <div class="dropdown">
+                                    <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        Buy
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="{% url 'buy_crypto' crypto.code %}">Market Buy</a></li>
+                                        <li><a class="dropdown-item" href="{% url 'create_limit_order' crypto.code %}?side=buy">Limit Buy</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="{% url 'create_stop_order' crypto.code %}?side=buy">Stop Buy</a></li>
+                                        <li><a class="dropdown-item" href="{% url 'create_stop_order' crypto.code %}?side=buy&stop_limit=true">Stop-Limit Buy</a></li>
+                                    </ul>
+                                </div>
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        Sell
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="{% url 'sell_crypto' crypto.code %}">Market Sell</a></li>
+                                        <li><a class="dropdown-item" href="{% url 'create_limit_order' crypto.code %}?side=sell">Limit Sell</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="{% url 'create_stop_order' crypto.code %}?side=sell">Stop Sell</a></li>
+                                        <li><a class="dropdown-item" href="{% url 'create_stop_order' crypto.code %}?side=sell&stop_limit=true">Stop-Limit Sell</a></li>
+                                    </ul>
+                                </div>
                                 <a href="{% url 'send_crypto' crypto.code %}" class="btn btn-outline-primary">Send</a>
                             </div>
                         </div>
