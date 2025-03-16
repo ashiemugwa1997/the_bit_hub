@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Trade List</title>
+</head>
+<body>
+    <h1>My Trades</h1>
+    
+    <div class="profile-info">
+        <h2>Your Trader Profile</h2>
+        <p>Rating: {{ trader_profile.rating|floatformat:2 }} / 5.00</p>
+        <p>Total Trades: {{ trader_profile.total_trades }}</p>
+        <p>Successful Trades: {{ trader_profile.successful_trades }}</p>
+    </div>
+    
+    <h2>Your Trades</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Price</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for trade in trades %}
+            <tr>
+                <td>{{ trade.date|date:"Y-m-d H:i" }}</td>
+                <td>{{ trade.trade_type }}</td>
+                <td>{{ trade.amount }} BTC</td>
+                <td>${{ trade.price }}</td>
+                <td>
+                    {% if trade.is_successful %}
+                        <span style="color: green;">Successful</span>
+                    {% elif trade.is_successful == False %}
+                        <span style="color: red;">Failed</span>
+                    {% else %}
+                        <span style="color: orange;">Pending</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if not trade.is_successful and trade.is_successful != False %}
+                        <a href="{% url 'complete_trade' trade.id %}?success=true">Mark Successful</a> |
+                        <a href="{% url 'complete_trade' trade.id %}?success=false">Mark Failed</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6">You have no trades yet.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div class="actions">
+        <p><a href="{% url 'create_trade' %}">Create New Trade</a></p>
+        <p><a href="{% url 'top_traders' %}">View Top Traders</a></p>
+    </div>
+</body>
+</html>

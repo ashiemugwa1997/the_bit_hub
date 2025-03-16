@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Trader Profile: {{ trader.username }}</title>
+</head>
+<body>
+    <h1>{{ trader.username }}'s Profile</h1>
+    
+    <div class="profile-stats">
+        <h2>Trader Rating: {{ trader_profile.rating|floatformat:2 }} / 5.00</h2>
+        <p>Total Trades: {{ trader_profile.total_trades }}</p>
+        <p>Successful Trades: {{ trader_profile.successful_trades }}</p>
+        <p>Success Rate: 
+            {% if trader_profile.total_trades > 0 %}
+                {{ trader_profile.successful_trades|floatformat:0 }}%
+            {% else %}
+                N/A
+            {% endif %}
+        </p>
+    </div>
+    
+    <h2>Recent Trades</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Price</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for trade in trades %}
+            <tr>
+                <td>{{ trade.date|date:"Y-m-d H:i" }}</td>
+                <td>{{ trade.trade_type }}</td>
+                <td>{{ trade.amount }} BTC</td>
+                <td>${{ trade.price }}</td>
+                <td>
+                    {% if trade.is_successful %}
+                        <span style="color: green;">Successful</span>
+                    {% else %}
+                        <span style="color: red;">Failed</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5">No trades yet.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <p><a href="{% url 'trade_list' %}">Back to Trades</a></p>
+</body>
+</html>

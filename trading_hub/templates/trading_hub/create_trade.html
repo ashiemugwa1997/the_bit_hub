@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Trade</title>
+</head>
+<body>
+    <h1>Create Trade</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Submit</button>
+    </form>
+    <a href="{% url 'trade_list' %}">Back to Trade List</a>
+</body>
+</html>
