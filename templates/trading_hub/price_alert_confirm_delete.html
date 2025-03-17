@@ -1,0 +1,10 @@
+{% extends 'trading_hub/base.html' %}
+{% block content %}
+<h2>Confirm Delete Price Alert</h2>
+<form method="post">
+    {% csrf_token %}
+    <p>Are you sure you want to delete this price alert?</p>
+    <button type="submit">Confirm</button>
+    <a href="{% url 'price_alert_list' %}">Cancel</a>
+</form>
+{% endblock %}

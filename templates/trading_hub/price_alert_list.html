@@ -1,0 +1,14 @@
+{% extends 'trading_hub/base.html' %}
+{% block content %}
+<h2>Price Alerts</h2>
+<a href="{% url 'price_alert_create' %}">Create New Alert</a>
+<ul>
+    {% for alert in object_list %}
+    <li>
+        {{ alert.symbol }} - {{ alert.target_price }}
+        <a href="{% url 'price_alert_update' alert.pk %}">Edit</a>
+        <a href="{% url 'price_alert_delete' alert.pk %}">Delete</a>
+    </li>
+    {% endfor %}
+</ul>
+{% endblock %}
