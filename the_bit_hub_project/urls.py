@@ -23,6 +23,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', RedirectView.as_view(pattern_name='dashboard', permanent=False)),
     path('coinbase/', include('trading_hub.urls')),
+    path('account/', include('two_factor.urls', 'two_factor')),
     path('accounts/', include('django.contrib.auth.urls')),
 ]
 

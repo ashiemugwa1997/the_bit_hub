@@ -41,6 +41,12 @@ INSTALLED_APPS = [
     'trading_hub.apps.TradingHubConfig',  # Add the trading_hub app
     # Temporarily removed Django Q due to compatibility issues
     # 'django_q',  # Add Django Q for async tasks and scheduling
+    'django_otp',
+    'django_otp.plugins.otp_totp',
+    'django_otp.plugins.otp_static',
+    'django_otp.plugins.otp_email',
+    'two_factor',
+    'phonenumber_field',
 ]
 
 MIDDLEWARE = [
@@ -150,9 +156,9 @@ else:
     SECURE_SSL_REDIRECT = False  # Disable in development
 
 # Authentication URLs
-LOGIN_URL = 'login'
+LOGIN_URL = 'two_factor:login'
 LOGIN_REDIRECT_URL = 'dashboard'
-LOGOUT_REDIRECT_URL = 'login'
+LOGOUT_REDIRECT_URL = 'two_factor:login'
 
 # Content Security Policy (CSP)
 CSP_DEFAULT_SRC = ("'self'",)
