@@ -1,0 +1,9 @@
+{% extends 'trading_hub/base.html' %}
+{% block content %}
+  <h2>Delete Bank Account</h2>
+  <form method="post">
+    {% csrf_token %}
+    <p>Are you sure you want to delete the bank account for {{ bank_account.account_holder_name }}?</p>
+    <button type="submit">Delete</button>
+  </form>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends 'trading_hub/base.html' %}
+{% block content %}
+  <h2>Bank Accounts</h2>
+  <a href="{% url 'add_bank_account' %}">Add Bank Account</a>
+  <ul>
+    {% for bank_account in bank_accounts %}
+      <li>
+        {{ bank_account.account_holder_name }} - {{ bank_account.bank_name }}
+        <a href="{% url 'update_bank_account' bank_account.pk %}">Update</a>
+        <a href="{% url 'delete_bank_account' bank_account.pk %}">Delete</a>
+      </li>
+    {% endfor %}
+  </ul>
+{% endblock %}
