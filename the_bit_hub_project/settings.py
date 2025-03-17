@@ -206,3 +206,7 @@ ALLOWED_IPS = [
 #         'unix_socket_path': None,
 #     }
 # }
+
+# Stripe settings
+STRIPE_SECRET_KEY = 'sk_test_51JvisNEgswk7aQ98INM3cer8URjOah60zPpIlvtEVEwuzLfyJHej1QPOSX07KBb3KUC5nidwyEPesGBCeMs9VLjg00zosA81Ax'
+STRIPE_PUBLISHABLE_KEY = 'pk_test_51JvisNEgswk7aQ984rSLm96APZYfJNW8apESNCq5nbpVxVTWyGGSSV9yGNs4iK4cRftXqftD2jg7EHtoo3qYCpzv00c1OUHT8r'
