@@ -1,0 +1,67 @@
+{% extends 'trading_hub/base.html' %}
+
+{% block content %}
+<h2>Order Book</h2>
+
+<h3>Limit Orders</h3>
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>User</th>
+            <th>Cryptocurrency</th>
+            <th>Side</th>
+            <th>Amount</th>
+            <th>Limit Price</th>
+            <th>Status</th>
+            <th>Created At</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for order in limit_orders %}
+        <tr>
+            <td>{{ order.id }}</td>
+            <td>{{ order.user.username }}</td>
+            <td>{{ order.cryptocurrency.name }}</td>
+            <td>{{ order.side }}</td>
+            <td>{{ order.amount }}</td>
+            <td>{{ order.limit_price }}</td>
+            <td>{{ order.status }}</td>
+            <td>{{ order.created_at }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h3>Stop Orders</h3>
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>User</th>
+            <th>Cryptocurrency</th>
+            <th>Side</th>
+            <th>Amount</th>
+            <th>Stop Price</th>
+            <th>Limit Price</th>
+            <th>Status</th>
+            <th>Created At</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for order in stop_orders %}
+        <tr>
+            <td>{{ order.id }}</td>
+            <td>{{ order.user.username }}</td>
+            <td>{{ order.cryptocurrency.name }}</td>
+            <td>{{ order.side }}</td>
+            <td>{{ order.amount }}</td>
+            <td>{{ order.stop_price }}</td>
+            <td>{{ order.limit_price }}</td>
+            <td>{{ order.status }}</td>
+            <td>{{ order.created_at }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

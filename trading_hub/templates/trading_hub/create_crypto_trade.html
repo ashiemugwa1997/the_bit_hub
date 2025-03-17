@@ -1,0 +1,25 @@
+{% extends 'trading_hub/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Convert {{ base_crypto.name }} to {{ quote_crypto.name }}</h2>
+    
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Wallet Balances</h5>
+            <p>{{ base_crypto.name }}: {{ base_wallet.balance }}</p>
+            <p>{{ quote_crypto.name }}: {{ quote_wallet.balance }}</p>
+        </div>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="amount">Amount ({{ base_crypto.code }})</label>
+            <input type="number" step="any" class="form-control" id="amount" name="amount" required>
+        </div>
+        
+        <button type="submit" class="btn btn-primary mt-3">Convert</button>
+    </form>
+</div>
+{% endblock %}

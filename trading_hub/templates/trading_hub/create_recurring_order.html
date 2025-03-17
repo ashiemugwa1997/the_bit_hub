@@ -1,0 +1,179 @@
+{% extends "trading_hub/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Create Recurring Order - {{ crypto.name }}</h4>
+                    <span class="badge bg-primary">Dollar-Cost Averaging</span>
+                </div>
+                <div class="card-body">
+                    {% if error %}
+                    <div class="alert alert-danger">{{ error }}</div>
+                    {% endif %}
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">Current Market Price</label>
+                            <div class="form-control-plaintext">${{ current_price|floatformat:2 }}</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Order Type</label>
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio" class="btn-check" name="order_type" id="buy" value="buy" checked>
+                                <label class="btn btn-outline-primary" for="buy">Recurring Buy</label>
+                                
+                                <input type="radio" class="btn-check" name="order_type" id="sell" value="sell">
+                                <label class="btn btn-outline-primary" for="sell">Recurring Sell</label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="interval" class="form-label">Frequency</label>
+                            <select class="form-select" id="interval" name="interval">
+                                <option value="daily">Daily</option>
+                                <option value="weekly" selected>Weekly</option>
+                                <option value="biweekly">Bi-Weekly</option>
+                                <option value="monthly">Monthly</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="amount" class="form-label amount-label">Amount (USD)</label>
+                            <div class="input-group">
+                                <span class="input-group-text" id="amount-symbol">$</span>
+                                <input type="number" class="form-control" id="amount" name="amount" step="0.01" min="1" required>
+                            </div>
+                            <div class="form-text" id="amountInfo"></div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="start_date" class="form-label">Start Date</label>
+                            <input type="datetime-local" class="form-control" id="start_date" name="start_date">
+                            <div class="form-text">If empty, the order will start immediately</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="end_date" class="form-label">End Date (Optional)</label>
+                            <input type="datetime-local" class="form-control" id="end_date" name="end_date">
+                            <div class="form-text">Leave empty for an indefinite recurring order</div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <h5>Recurring Order Summary</h5>
+                            <div id="orderSummary" class="mt-2">
+                                You will automatically buy <strong>{{ crypto.code }}</strong> worth of <strong>$25.00</strong> <strong>weekly</strong>, starting <strong>today</strong>.
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Create Recurring Order</button>
+                            <a href="{% url 'crypto_detail' crypto.code %}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const currentPrice = {{ current_price }};
+    const amountInput = document.getElementById('amount');
+    const orderTypeInputs = document.querySelectorAll('input[name="order_type"]');
+    const intervalSelect = document.getElementById('interval');
+    const startDateInput = document.getElementById('start_date');
+    const endDateInput = document.getElementById('end_date');
+    const amountInfo = document.getElementById('amountInfo');
+    const amountLabel = document.querySelector('.amount-label');
+    const amountSymbol = document.getElementById('amount-symbol');
+    const orderSummary = document.getElementById('orderSummary');
+    const cryptoCode = '{{ crypto.code }}';
+    
+    // Set default value for amount input
+    amountInput.value = "25.00";
+    
+    // Set default value for start date (today)
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    startDateInput.value = now.toISOString().slice(0, 16);
+    
+    function updateAmountType() {
+        const orderType = document.querySelector('input[name="order_type"]:checked').value;
+        if (orderType === 'buy') {
+            amountLabel.textContent = "Amount (USD)";
+            amountSymbol.textContent = "$";
+            amountInfo.textContent = `This amount in USD will be used to buy ${cryptoCode} at each interval.`;
+        } else {
+            amountLabel.textContent = `Amount (${cryptoCode})`;
+            amountSymbol.textContent = cryptoCode;
+            amountInfo.textContent = `This amount of ${cryptoCode} will be sold at each interval.`;
+        }
+        updateOrderSummary();
+    }
+    
+    function getFrequencyText() {
+        const interval = intervalSelect.value;
+        switch (interval) {
+            case 'daily': return 'daily';
+            case 'weekly': return 'weekly';
+            case 'biweekly': return 'every two weeks';
+            case 'monthly': return 'monthly';
+            default: return 'regularly';
+        }
+    }
+    
+    function getStartDateText() {
+        if (!startDateInput.value) return 'today';
+        const date = new Date(startDateInput.value);
+        return date.toLocaleDateString();
+    }
+    
+    function getEndDateText() {
+        if (!endDateInput.value) return 'indefinitely';
+        const date = new Date(endDateInput.value);
+        return `until ${date.toLocaleDateString()}`;
+    }
+    
+    function updateOrderSummary() {
+        const orderType = document.querySelector('input[name="order_type"]:checked').value;
+        const amount = parseFloat(amountInput.value) || 0;
+        const frequencyText = getFrequencyText();
+        const startDateText = getStartDateText();
+        const endDateText = getEndDateText();
+        
+        if (orderType === 'buy') {
+            orderSummary.innerHTML = `
+                You will automatically buy <strong>${cryptoCode}</strong> worth of <strong>$${amount.toFixed(2)}</strong> 
+                <strong>${frequencyText}</strong>, starting <strong>${startDateText}</strong> ${endDateText}.
+            `;
+        } else {
+            orderSummary.innerHTML = `
+                You will automatically sell <strong>${amount.toFixed(8)} ${cryptoCode}</strong>
+                <strong>${frequencyText}</strong>, starting <strong>${startDateText}</strong> ${endDateText}.
+            `;
+        }
+    }
+    
+    // Event listeners
+    orderTypeInputs.forEach(input => {
+        input.addEventListener('change', updateAmountType);
+    });
+    
+    amountInput.addEventListener('input', updateOrderSummary);
+    intervalSelect.addEventListener('change', updateOrderSummary);
+    startDateInput.addEventListener('change', updateOrderSummary);
+    endDateInput.addEventListener('change', updateOrderSummary);
+    
+    // Initial setup
+    updateAmountType();
+    updateOrderSummary();
+});
+</script>
+{% endblock %}

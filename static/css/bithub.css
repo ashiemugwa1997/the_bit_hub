@@ -1,0 +1,166 @@
+/* BitHub Custom Theme */
+:root {
+    --bithub-primary: #9759f6;     /* Purple instead of blue */
+    --bithub-secondary: #2a0e5a;   /* Dark purple */
+    --bithub-light: #f3eefe;       /* Light purple tint for backgrounds */
+    --bithub-success: #34d399;     /* Teal green for success states */
+    --bithub-danger: #f87171;      /* Coral red for danger states */
+    --bithub-warning: #fbbf24;     /* Amber for warnings */
+    --bithub-info: #60a5fa;        /* Light blue for info */
+    --bithub-dark: #171023;        /* Dark purple-black */
+}
+
+body {
+    background-color: var(--bithub-light);
+    font-family: 'Poppins', sans-serif;
+}
+
+.navbar {
+    background-color: #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.navbar-brand {
+    font-weight: 600;
+    color: var(--bithub-primary);
+}
+
+.nav-link {
+    color: #333;
+    font-weight: 500;
+}
+
+.nav-link:hover, .nav-link.active {
+    color: var(--bithub-primary);
+}
+
+.btn-primary {
+    background-color: var(--bithub-primary);
+    border-color: var(--bithub-primary);
+}
+
+.btn-primary:hover, .btn-primary:focus {
+    background-color: #8445e3;
+    border-color: #8445e3;
+}
+
+.btn-outline-primary {
+    border-color: var(--bithub-primary);
+    color: var(--bithub-primary);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--bithub-primary);
+    color: white;
+}
+
+.card {
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border: none;
+}
+
+.crypto-header {
+    padding: 24px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.crypto-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+}
+
+.price-up {
+    color: var(--bithub-success);
+}
+
+.price-down {
+    color: var(--bithub-danger);
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+}
+
+.period-selector {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.period-selector .btn {
+    border-radius: 30px;
+    padding: 6px 16px;
+    margin: 0 4px;
+}
+
+.table {
+    font-size: 14px;
+}
+
+.watchlist-button {
+    cursor: pointer;
+}
+
+.watchlist-button i {
+    margin-right: 5px;
+}
+
+/* Dark mode toggle */
+.dark-mode {
+    background-color: var(--bithub-dark);
+    color: #f8f9fa;
+}
+
+.dark-mode .card {
+    background-color: #1e1a29;
+    border-color: #2c2639;
+}
+
+.dark-mode .navbar {
+    background-color: #1e1a29;
+}
+
+.dark-mode .navbar-brand, 
+.dark-mode .nav-link {
+    color: #f8f9fa;
+}
+
+/* Custom header banner */
+.bithub-banner {
+    background: linear-gradient(135deg, var(--bithub-primary) 0%, var(--bithub-secondary) 100%);
+    color: white;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+    border-radius: 0 0 1rem 1rem;
+}
+
+/* Custom badge colors */
+.badge.bg-primary {
+    background-color: var(--bithub-primary) !important;
+}
+
+/* Animated gradient for special elements */
+.premium-feature {
+    background: linear-gradient(-45deg, var(--bithub-primary), var(--bithub-secondary), #4158D0, #C850C0);
+    background-size: 400% 400%;
+    animation: gradient 15s ease infinite;
+    color: white;
+    border-radius: 12px;
+    padding: 2rem;
+}
+
+@keyframes gradient {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
