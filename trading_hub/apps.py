@@ -11,9 +11,11 @@ class TradingHubConfig(AppConfig):
         import sys
         if 'collectstatic' not in sys.argv and 'makemigrations' not in sys.argv and 'migrate' not in sys.argv:
             try:
-                # Re-enable the scheduler setup
-                from .scheduler import setup_scheduler
-                setup_scheduler()
+                # Temporarily disable scheduler setup
+                # setup_scheduler()
+                
+                # Import signal handlers
+                import trading_hub.signals
                 print("Scheduler initialized successfully")
             except ImportError as e:
                 print(f"Warning: Could not initialize scheduler due to import error: {e}")

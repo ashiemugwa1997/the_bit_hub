@@ -1,17 +1,27 @@
 from django import forms
-from .models import KYC
-from .models import BankAccount
-from .models import PriceAlert
+from .models import KYC, BankAccount, PriceAlert
 
 class KYCForm(forms.ModelForm):
     class Meta:
         model = KYC
-        fields = ['document_type', 'document_number', 'document_file', 'address_line1', 'address_line2', 'city', 'state', 'postal_code', 'country']
+        fields = [
+            'document_type', 'document_number', 'document_image', 
+            'address_line1', 'address_line2', 'city', 'state', 
+            'postal_code', 'country'
+        ]
+        exclude = ['user', 'status', 'rejection_reason', 'submitted_at', 
+                  'verified_at', 'address_rejection_reason', 'tier']
+
+class AddressForm(forms.ModelForm):
+    class Meta:
+        model = KYC
+        fields = ['address_line1', 'address_line2', 'city', 'state', 
+                 'postal_code', 'country']
 
 class BankAccountForm(forms.ModelForm):
     class Meta:
         model = BankAccount
-        fields = ['account_number', 'bank_name', 'account_holder_name', 'ifsc_code']
+        exclude = ['user', 'created_at', 'updated_at', 'verified']
 
 class WireTransferForm(forms.Form):
     amount = forms.DecimalField(max_digits=10, decimal_places=2, min_value=0.01, label='Amount (USD)')

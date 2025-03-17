@@ -9,7 +9,7 @@ import json
 import uuid
 from datetime import datetime, timedelta
 from .models import CryptoCurrency, Wallet, Transaction, LimitOrder, StopOrder, RecurringOrder, TradingPair, Device, KYC, BankAccount
-from .forms import KYCForm, AddressForm, BankAccountForm
+from .forms import KYCForm, AddressForm, BankAccountForm, PriceAlertForm
 from django.contrib.admin.views.decorators import staff_member_required
 from django.urls import reverse
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
@@ -1262,3 +1262,27 @@ def register_user(request):
     else:
         form = UserCreationForm()
     return render(request, 'registration/register.html', {'form': form})
+
+from django.http import JsonResponse
+
+def mobile_profile(request):
+    """View function for mobile profile page"""
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': 'Authentication required'}, status=401)
+    
+    # Get the user's profile information
+    user = request.user
+    try:
+        profile = user.coinbase_profile
+        data = {
+            'username': user.username,
+            'email': user.email,
+            'rating': float(profile.rating) if profile.rating else 0.0,
+            'total_trades': profile.total_trades,
+            'successful_trades': profile.successful_trades,
+            'phone_verified': profile.phone_verified,
+            'identity_verified': profile.identity_verified,
+        }
+        return JsonResponse(data)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

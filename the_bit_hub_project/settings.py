@@ -39,15 +39,14 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'trading_hub.apps.TradingHubConfig',  # Add the trading_hub app
-    # Temporarily removed Django Q due to compatibility issues
-    # 'django_q',  # Add Django Q for async tasks and scheduling
+    # 'django_q',  # Comment out Django Q due to compatibility issues
     'django_otp',
     'django_otp.plugins.otp_totp',
     'django_otp.plugins.otp_static',
     'django_otp.plugins.otp_email',
     'two_factor',
     'phonenumber_field',
-    'django_u2f',
+    # 'django_u2f',  # Temporarily commented out due to compatibility issues
 ]
 
 MIDDLEWARE = [
@@ -157,10 +156,10 @@ if not DEBUG:
 else:
     SECURE_SSL_REDIRECT = False  # Disable in development
 
-# Authentication URLs
-LOGIN_URL = 'two_factor:login'
+# Authentication URLs - updated to work with directly included two-factor URLs
+LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
-LOGOUT_REDIRECT_URL = 'two_factor:login'
+LOGOUT_REDIRECT_URL = 'login'
 
 # Content Security Policy (CSP)
 CSP_DEFAULT_SRC = ("'self'",)
@@ -184,7 +183,7 @@ ALLOWED_IPS = [
     '127.0.0.1',  # Add your allowed IP addresses here
 ]
 
-# Commented out Django Q Configuration due to compatibility issues
+# Comment out Django Q Configuration due to compatibility issues
 # Q_CLUSTER = {
 #     'name': 'BitHub',
 #     'workers': 4,

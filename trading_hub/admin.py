@@ -59,9 +59,9 @@ class PriceHistoryAdmin(admin.ModelAdmin):
 # Register PaymentMethod
 @admin.register(PaymentMethod)
 class PaymentMethodAdmin(admin.ModelAdmin):
-    list_display = ('user', 'name', 'method_type', 'is_default', 'created_at')
-    list_filter = ('method_type', 'is_default', 'created_at')
-    search_fields = ('user__username', 'name')
+    list_display = ['user', 'method_type', 'provider', 'account_number', 'created_at']
+    list_filter = ['method_type', 'provider']
+    search_fields = ['user__username', 'provider', 'account_number']
 
 # Register LimitOrder
 @admin.register(LimitOrder)
