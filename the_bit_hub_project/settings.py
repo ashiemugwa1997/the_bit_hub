@@ -59,6 +59,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'csp.middleware.CSPMiddleware',
+    'trading_hub.middleware.IPAllowlistMiddleware',
 ]
 
 ROOT_URLCONF = 'the_bit_hub_project.urls'
@@ -171,6 +172,17 @@ CSP_FONT_SRC = ("'self'", 'https://cdn.jsdelivr.net')
 # U2F settings
 U2F_APP_ID = 'https://your-domain.com'
 U2F_FACET = 'https://your-domain.com'
+
+# Session management settings
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
+SESSION_COOKIE_AGE = 1209600  # 2 weeks
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+# List of allowed IP addresses for IP allowlisting
+ALLOWED_IPS = [
+    '127.0.0.1',  # Add your allowed IP addresses here
+]
 
 # Commented out Django Q Configuration due to compatibility issues
 # Q_CLUSTER = {

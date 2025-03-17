@@ -8,7 +8,10 @@ from decimal import Decimal
 import json
 import uuid
 from datetime import datetime, timedelta
-from .models import CryptoCurrency, Wallet, Transaction, LimitOrder, StopOrder, RecurringOrder, TradingPair
+from .models import CryptoCurrency, Wallet, Transaction, LimitOrder, StopOrder, RecurringOrder, TradingPair, Device, KYC, BankAccount
+from .forms import KYCForm, AddressForm, BankAccountForm
+from django.contrib.admin.views.decorators import staff_member_required
+from django.urls import reverse
 
 @login_required
 def dashboard(request):
@@ -852,3 +855,294 @@ def depth_chart_data(request):
     }
 
     return JsonResponse(data)
+
+@login_required
+def device_list(request):
+    devices = Device.objects.filter(user=request.user)
+    return render(request, 'trading_hub/device_list.html', {'devices': devices})
+
+@login_required
+def device_register(request):
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        device_id = request.POST.get('device_id')
+        if name and device_id:
+            Device.objects.create(user=request.user, name=name, device_id=device_id)
+            messages.success(request, 'Device registered successfully.')
+            return redirect('device_list')
+        else:
+            messages.error(request, 'Please provide both name and device ID.')
+    return render(request, 'trading_hub/device_register.html')
+
+@login_required
+def device_remove(request, device_id):
+    try:
+        device = Device.objects.get(user=request.user, device_id=device_id)
+        device.delete()
+        messages.success(request, 'Device removed successfully.')
+    except Device.DoesNotExist:
+        messages.error(request, 'Device not found.')
+    return redirect('device_list')
+
+@login_required
+def kyc_submit(request):
+    if request.method == 'POST':
+        form = KYCForm(request.POST, request.FILES)
+        if form.is_valid():
+            kyc = form.save(commit=False)
+            kyc.user = request.user
+            kyc.save()
+            messages.success(request, 'KYC submitted successfully.')
+            return redirect('kyc_status')
+    else:
+        form = KYCForm()
+    return render(request, 'trading_hub/kyc_submit.html', {'form': form})
+
+@login_required
+def kyc_status(request):
+    try:
+        kyc = KYC.objects.get(user=request.user)
+    except KYC.DoesNotExist:
+        kyc = None
+    return render(request, 'trading_hub/kyc_status.html', {'kyc': kyc})
+
+@staff_member_required
+def kyc_list(request):
+    pending_kyc = KYC.objects.filter(status='pending')
+    return render(request, 'trading_hub/kyc_list.html', {'pending_kyc': pending_kyc})
+
+@staff_member_required
+def kyc_verify(request, kyc_id):
+    kyc = KYC.objects.get(id=kyc_id)
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'verify':
+            kyc.status = 'verified'
+            kyc.verified_at = timezone.now()
+            kyc.save()
+            messages.success(request, 'KYC verified successfully.')
+        elif action == 'reject':
+            kyc.status = 'rejected'
+            kyc.rejection_reason = request.POST.get('rejection_reason')
+            kyc.save()
+            messages.success(request, 'KYC rejected.')
+        return redirect('kyc_list')
+    return render(request, 'trading_hub/kyc_verify.html', {'kyc': kyc})
+
+@login_required
+def address_submit(request):
+    try:
+        kyc = KYC.objects.get(user=request.user)
+    except KYC.DoesNotExist:
+        kyc = None
+    if request.method == 'POST':
+        kyc.address_line1 = request.POST.get('address_line1')
+        kyc.address_line2 = request.POST.get('address_line2')
+        kyc.city = request.POST.get('city')
+        kyc.state = request.POST.get('state')
+        kyc.postal_code = request.POST.get('postal_code')
+        kyc.country = request.POST.get('country')
+        kyc.save()
+        messages.success(request, 'Address submitted successfully.')
+        return redirect('kyc_status')
+    return render(request, 'trading_hub/address_submit.html', {'kyc': kyc})
+
+@staff_member_required
+def address_verify(request, kyc_id):
+    kyc = KYC.objects.get(id=kyc_id)
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'verify':
+            kyc.status = 'address_verified'
+            kyc.verified_at = timezone.now()
+            kyc.save()
+            messages.success(request, 'Address verified successfully.')
+        elif action == 'reject':
+            kyc.status = 'address_rejected'
+            kyc.address_rejection_reason = request.POST.get('address_rejection_reason')
+            kyc.save()
+            messages.success(request, 'Address rejected.')
+        return redirect('kyc_list')
+    return render(request, 'trading_hub/address_verify.html', {'kyc': kyc})
+
+@login_required
+def submit_kyc(request):
+    if request.method == 'POST':
+        form = KYCForm(request.POST, request.FILES)
+        if form.is_valid():
+            kyc = form.save(commit=False)
+            kyc.user = request.user
+            kyc.save()
+            return redirect('kyc_status')
+    else:
+        form = KYCForm()
+    return render(request, 'trading_hub/kyc_submit.html', {'form': form})
+
+@login_required
+def kyc_status(request):
+    kyc = KYC.objects.filter(user=request.user).first()
+    return render(request, 'trading_hub/kyc_status.html', {'kyc': kyc})
+
+@staff_member_required
+def verify_kyc(request, kyc_id):
+    kyc = KYC.objects.get(id=kyc_id)
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'verify':
+            kyc.status = 'verified'
+            kyc.verified_at = timezone.now()
+            kyc.save()
+        elif action == 'reject':
+            kyc.status = 'rejected'
+            kyc.rejection_reason = request.POST.get('rejection_reason')
+            kyc.save()
+        return redirect('kyc_list')
+    return render(request, 'trading_hub/kyc_verify.html', {'kyc': kyc})
+
+@staff_member_required
+def kyc_list(request):
+    kycs = KYC.objects.all()
+    return render(request, 'trading_hub/kyc_list.html', {'kycs': kycs})
+
+@login_required
+def submit_address(request):
+    kyc = KYC.objects.filter(user=request.user).first()
+    if request.method == 'POST':
+        form = AddressForm(request.POST)
+        if form.is_valid():
+            kyc.address_line1 = form.cleaned_data['address_line1']
+            kyc.address_line2 = form.cleaned_data['address_line2']
+            kyc.city = form.cleaned_data['city']
+            kyc.state = form.cleaned_data['state']
+            kyc.postal_code = form.cleaned_data['postal_code']
+            kyc.country = form.cleaned_data['country']
+            kyc.save()
+            return redirect('kyc_status')
+    else:
+        form = AddressForm()
+    return render(request, 'trading_hub/address_submit.html', {'form': form})
+
+@staff_member_required
+def verify_address(request, kyc_id):
+    kyc = KYC.objects.get(id=kyc_id)
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'verify':
+            kyc.status = 'address_verified'
+            kyc.verified_at = timezone.now()
+            kyc.save()
+        elif action == 'reject':
+            kyc.status = 'address_rejected'
+            kyc.address_rejection_reason = request.POST.get('address_rejection_reason')
+            kyc.save()
+        return redirect('kyc_list')
+    return render(request, 'trading_hub/address_verify.html', {'kyc': kyc})
+
+@staff_member_required
+def verify_tier(request, kyc_id):
+    kyc = KYC.objects.get(id=kyc_id)
+    if request.method == 'POST':
+        tier = request.POST.get('tier')
+        kyc.tier = tier
+        kyc.save()
+        return redirect('kyc_list')
+    return render(request, 'trading_hub/kyc_verify.html', {'kyc': kyc})
+
+@login_required
+def verify_tier_1(request):
+    if request.method == 'POST':
+        # Handle tier 1 verification
+        pass
+    return render(request, 'trading_hub/verify_tier_1.html')
+
+@login_required
+def verify_tier_2(request):
+    if request.method == 'POST':
+        # Handle tier 2 verification
+        pass
+    return render(request, 'trading_hub/verify_tier_2.html')
+
+@login_required
+def verify_tier_3(request):
+    if request.method == 'POST':
+        # Handle tier 3 verification
+        pass
+    return render(request, 'trading_hub/verify_tier_3.html')
+
+@login_required
+def add_bank_account(request):
+    if request.method == 'POST':
+        form = BankAccountForm(request.POST)
+        if form.is_valid():
+            bank_account = form.save(commit=False)
+            bank_account.user = request.user
+            bank_account.save()
+            messages.success(request, 'Bank account added successfully.')
+            return redirect('bank_account_list')
+    else:
+        form = BankAccountForm()
+    return render(request, 'trading_hub/add_bank_account.html', {'form': form})
+
+@login_required
+def update_bank_account(request, pk):
+    bank_account = get_object_or_404(BankAccount, pk=pk)
+    if request.method == 'POST':
+        form = BankAccountForm(request.POST, instance=bank_account)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Bank account updated successfully.')
+            return redirect('bank_account_list')
+    else:
+        form = BankAccountForm(instance=bank_account)
+    return render(request, 'trading_hub/update_bank_account.html', {'form': form})
+
+@login_required
+def delete_bank_account(request, pk):
+    bank_account = get_object_or_404(BankAccount, pk=pk)
+    if request.method == 'POST':
+        bank_account.delete()
+        messages.success(request, 'Bank account deleted successfully.')
+        return redirect('bank_account_list')
+    return render(request, 'trading_hub/delete_bank_account.html', {'bank_account': bank_account})
+
+@login_required
+def bank_account_list(request):
+    bank_accounts = BankAccount.objects.filter(user=request.user)
+    return render(request, 'trading_hub/bank_account_list.html', {'bank_accounts': bank_accounts})
+
+@login_required
+def initiate_wire_transfer(request):
+    if request.method == 'POST':
+        amount = Decimal(request.POST.get('amount', '0'))
+        bank_account_id = request.POST.get('bank_account_id')
+        
+        if amount <= 0:
+            messages.error(request, 'Amount must be greater than zero.')
+            return redirect('initiate_wire_transfer')
+        
+        try:
+            bank_account = BankAccount.objects.get(id=bank_account_id, user=request.user)
+        except BankAccount.DoesNotExist:
+            messages.error(request, 'Invalid bank account.')
+            return redirect('initiate_wire_transfer')
+        
+        # Create the wire transfer transaction
+        with transaction.atomic():
+            tx = Transaction.objects.create(
+                user=request.user,
+                transaction_type='wire_transfer',
+                amount=amount,
+                currency='USD',
+                status='pending',
+                description=f'Wire transfer of {amount} USD to {bank_account.bank_name}',
+                from_wallet=None,
+                to_wallet=None
+            )
+            
+            # Here you would integrate with the actual wire transfer service
+            
+            messages.success(request, f'Successfully initiated wire transfer of {amount} USD to {bank_account.bank_name}.')
+            return redirect('dashboard')
+    
+    bank_accounts = BankAccount.objects.filter(user=request.user)
+    return render(request, 'trading_hub/initiate_wire_transfer.html', {'bank_accounts': bank_accounts})

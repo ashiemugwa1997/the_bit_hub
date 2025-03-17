@@ -633,3 +633,65 @@ class TradingPair(models.Model):
         if self.last_price and self.last_price != 0:
             return Decimal('1') / self.last_price
         return None
+
+
+class Device(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    name = models.CharField(max_length=255)
+    device_id = models.CharField(max_length=255, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'{self.name} ({self.device_id})'
+
+
+class KYC(models.Model):
+    TIER_CHOICES = [
+        ('tier_1', 'Tier 1'),
+        ('tier_2', 'Tier 2'),
+        ('tier_3', 'Tier 3'),
+    ]
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    document_type = models.CharField(max_length=50)
+    document_number = models.CharField(max_length=100)
+    document_image = models.ImageField(upload_to='kyc_documents/')
+    status = models.CharField(max_length=20, default='pending')
+    rejection_reason = models.TextField(null=True, blank=True)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    verified_at = models.DateTimeField(null=True, blank=True)
+    address_line1 = models.CharField(max_length=255, null=True, blank=True)
+    address_line2 = models.CharField(max_length=255, null=True, blank=True)
+    city = models.CharField(max_length=100, null=True, blank=True)
+    state = models.CharField(max_length=100, null=True, blank=True)
+    postal_code = models.CharField(max_length=20, null=True, blank=True)
+    country = models.CharField(max_length=100, null=True, blank=True)
+    address_rejection_reason = models.TextField(null=True, blank=True)
+    tier = models.CharField(max_length=20, default='tier_1')
+
+    def __str__(self):
+        return f'{self.user.username} - {self.document_type}'
+
+
+class BankAccount(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bank_accounts')
+    bank_name = models.CharField(max_length=100)
+    account_number = models.CharField(max_length=20)
+    routing_number = models.CharField(max_length=9)
+    account_type = models.CharField(max_length=10, choices=[('checking', 'Checking'), ('savings', 'Savings')])
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username}'s {self.bank_name} Account"
+
+
+class BankAccount(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    account_number = models.CharField(max_length=20)
+    bank_name = models.CharField(max_length=100)
+    account_holder_name = models.CharField(max_length=100)
+    ifsc_code = models.CharField(max_length=11)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.account_holder_name} - {self.bank_name}"
