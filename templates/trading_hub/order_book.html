@@ -3,6 +3,56 @@
 {% block content %}
 <h2>Order Book</h2>
 
+<h3>Advanced Chart</h3>
+<div id="advancedChart" style="width: 100%; height: 400px;"></div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        fetch('{% url 'depth_chart_data' %}')
+            .then(response => response.json())
+            .then(data => {
+                const chart = LightweightCharts.createChart(document.getElementById('advancedChart'), {
+                    width: document.getElementById('advancedChart').clientWidth,
+                    height: 400,
+                    layout: {
+                        backgroundColor: '#ffffff',
+                        textColor: '#000000',
+                    },
+                    grid: {
+                        vertLines: {
+                            color: '#e1e1e1',
+                        },
+                        horzLines: {
+                            color: '#e1e1e1',
+                        },
+                    },
+                    priceScale: {
+                        borderColor: '#cccccc',
+                    },
+                    timeScale: {
+                        borderColor: '#cccccc',
+                    },
+                });
+
+                const bidsSeries = chart.addLineSeries({
+                    color: 'rgba(75, 192, 192, 1)',
+                    lineWidth: 2,
+                });
+
+                const asksSeries = chart.addLineSeries({
+                    color: 'rgba(255, 99, 132, 1)',
+                    lineWidth: 2,
+                });
+
+                const bidsData = data.bids.map((value, index) => ({ time: index, value: value }));
+                const asksData = data.asks.map((value, index) => ({ time: index, value: value }));
+
+                bidsSeries.setData(bidsData);
+                asksSeries.setData(asksData);
+            });
+    });
+</script>
+
 <h3>Limit Orders</h3>
 <table>
     <thead>

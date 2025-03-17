@@ -43,6 +43,9 @@ urlpatterns = [
     # Order book
     path('order-book/', views.order_book, name='order_book'),
     
+    # Depth chart data
+    path('depth-chart-data/', views.depth_chart_data, name='depth_chart_data'),
+    
     # API endpoints
     # path('api/price-history/<str:code>/<str:period>/', views.price_history_data, name='price_history_data'),
     # path('api/watchlist-toggle/<str:code>/', views.watchlist_toggle, name='watchlist_toggle'),

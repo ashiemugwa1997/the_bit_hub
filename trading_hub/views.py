@@ -820,3 +820,35 @@ def order_book(request):
         'stop_orders': stop_orders,
     }
     return render(request, 'trading_hub/order_book.html', context)
+
+def depth_chart_data(request):
+    limit_orders = LimitOrder.objects.all().order_by('limit_price')
+    stop_orders = StopOrder.objects.all().order_by('stop_price')
+
+    bids = []
+    asks = []
+    labels = []
+
+    for order in limit_orders:
+        if order.side == 'buy':
+            bids.append(order.amount)
+            labels.append(order.limit_price)
+        else:
+            asks.append(order.amount)
+            labels.append(order.limit_price)
+
+    for order in stop_orders:
+        if order.side == 'buy':
+            bids.append(order.amount)
+            labels.append(order.stop_price)
+        else:
+            asks.append(order.amount)
+            labels.append(order.stop_price)
+
+    data = {
+        'labels': labels,
+        'bids': bids,
+        'asks': asks,
+    }
+
+    return JsonResponse(data)
