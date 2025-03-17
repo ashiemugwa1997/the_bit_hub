@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'django_otp.plugins.otp_email',
     'two_factor',
     'phonenumber_field',
+    'django_u2f',
 ]
 
 MIDDLEWARE = [
@@ -166,6 +167,10 @@ CSP_SCRIPT_SRC = ("'self'", 'https://cdn.jsdelivr.net', 'https://unpkg.com')
 CSP_STYLE_SRC = ("'self'", 'https://cdn.jsdelivr.net')
 CSP_IMG_SRC = ("'self'", 'data:')
 CSP_FONT_SRC = ("'self'", 'https://cdn.jsdelivr.net')
+
+# U2F settings
+U2F_APP_ID = 'https://your-domain.com'
+U2F_FACET = 'https://your-domain.com'
 
 # Commented out Django Q Configuration due to compatibility issues
 # Q_CLUSTER = {

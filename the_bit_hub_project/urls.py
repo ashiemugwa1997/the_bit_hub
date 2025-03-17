@@ -25,6 +25,7 @@ urlpatterns = [
     path('coinbase/', include('trading_hub.urls')),
     path('account/', include('two_factor.urls', 'two_factor')),
     path('accounts/', include('django.contrib.auth.urls')),
+    path('u2f/', include('django_u2f.urls', 'django_u2f')),
 ]
 
 # Add static and media file serving in development
