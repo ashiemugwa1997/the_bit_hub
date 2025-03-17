@@ -1,0 +1,29 @@
+{% extends 'trading_hub/base.html' %}
+
+{% block content %}
+<h2>Registered Devices</h2>
+<a href="{% url 'device_register' %}" class="btn btn-primary">Register New Device</a>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Device ID</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for device in devices %}
+        <tr>
+            <td>{{ device.name }}</td>
+            <td>{{ device.device_id }}</td>
+            <td>
+                <form method="post" action="{% url 'device_remove' device.device_id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Remove</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

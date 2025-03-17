@@ -1,0 +1,16 @@
+{% extends 'trading_hub/base.html' %}
+
+{% block content %}
+<h2>KYC Status</h2>
+{% if kyc %}
+    <p><strong>Document Type:</strong> {{ kyc.document_type }}</p>
+    <p><strong>Document Number:</strong> {{ kyc.document_number }}</p>
+    <p><strong>Status:</strong> {{ kyc.status }}</p>
+    {% if kyc.status == 'verified' %}
+        <p><strong>Verified At:</strong> {{ kyc.verified_at }}</p>
+    {% endif %}
+{% else %}
+    <p>You have not submitted KYC information yet.</p>
+    <a href="{% url 'kyc_submit' %}" class="btn btn-primary">Submit KYC</a>
+{% endif %}
+{% endblock %}
