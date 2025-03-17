@@ -1,0 +1,9 @@
+{% extends 'trading_hub/base.html' %}
+{% block content %}
+<h2>Verify Tier 1</h2>
+<form method="post">
+    {% csrf_token %}
+    <!-- Add form fields for tier 1 verification -->
+    <button type="submit">Submit</button>
+</form>
+{% endblock %}
