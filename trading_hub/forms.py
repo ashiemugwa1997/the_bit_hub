@@ -1,6 +1,7 @@
 from django import forms
 from .models import KYC
 from .models import BankAccount
+from .models import PriceAlert
 
 class KYCForm(forms.ModelForm):
     class Meta:
@@ -21,3 +22,8 @@ class WireTransferForm(forms.Form):
         super().__init__(*args, **kwargs)
         if user:
             self.fields['bank_account'].queryset = BankAccount.objects.filter(user=user)
+
+class PriceAlertForm(forms.ModelForm):
+    class Meta:
+        model = PriceAlert
+        fields = ['symbol', 'target_price']

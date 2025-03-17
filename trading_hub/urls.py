@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from .views import PriceAlertListView, PriceAlertCreateView, PriceAlertUpdateView, PriceAlertDeleteView
 
 urlpatterns = [
     # Main dashboard
@@ -77,4 +78,20 @@ urlpatterns = [
 
     # Wire transfer
     path('initiate-wire-transfer/', views.initiate_wire_transfer, name='initiate_wire_transfer'),
+
+    # Price alerts
+    path('price-alerts/', PriceAlertListView.as_view(), name='price_alert_list'),
+    path('price-alerts/create/', PriceAlertCreateView.as_view(), name='price_alert_create'),
+    path('price-alerts/<int:pk>/update/', PriceAlertUpdateView.as_view(), name='price_alert_update'),
+    path('price-alerts/<int:pk>/delete/', PriceAlertDeleteView.as_view(), name='price_alert_delete'),
+
+    # Mobile integration
+    path('mobile/dashboard/', views.mobile_dashboard, name='mobile_dashboard'),
+    path('mobile/assets/', views.mobile_asset_list, name='mobile_asset_list'),
+    path('mobile/assets/<str:code>/', views.mobile_crypto_detail, name='mobile_crypto_detail'),
+    path('mobile/transactions/', views.mobile_transaction_history, name='mobile_transaction_history'),
+    path('mobile/profile/', views.mobile_profile, name='mobile_profile'),
+
+    # User registration
+    path('register/', views.register_user, name='register_user'),
 ]

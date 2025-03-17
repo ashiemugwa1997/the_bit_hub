@@ -721,3 +721,14 @@ class PaymentMethod(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.method_type} ({self.provider})"
+
+
+class PriceAlert(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    symbol = models.CharField(max_length=10)
+    target_price = models.DecimalField(max_digits=20, decimal_places=8)
+    created_at = models.DateTimeField(auto_now_add=True)
+    triggered = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.symbol} - {self.target_price}"

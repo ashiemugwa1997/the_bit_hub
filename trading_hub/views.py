@@ -12,6 +12,14 @@ from .models import CryptoCurrency, Wallet, Transaction, LimitOrder, StopOrder, 
 from .forms import KYCForm, AddressForm, BankAccountForm
 from django.contrib.admin.views.decorators import staff_member_required
 from django.urls import reverse
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from django.urls import reverse_lazy
+from .models import PriceAlert
+from django.contrib.auth.models import User
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import login, authenticate
 
 @login_required
 def dashboard(request):
@@ -1146,3 +1154,111 @@ def initiate_wire_transfer(request):
     
     bank_accounts = BankAccount.objects.filter(user=request.user)
     return render(request, 'trading_hub/initiate_wire_transfer.html', {'bank_accounts': bank_accounts})
+
+class PriceAlertListView(ListView):
+    model = PriceAlert
+    template_name = 'trading_hub/price_alert_list.html'
+
+    def get_queryset(self):
+        return PriceAlert.objects.filter(user=self.request.user)
+
+class PriceAlertCreateView(CreateView):
+    model = PriceAlert
+    form_class = PriceAlertForm
+    template_name = 'trading_hub/price_alert_form.html'
+    success_url = reverse_lazy('price_alert_list')
+
+    def form_valid(self, form):
+        form.instance.user = self.request.user
+        return super().form_valid(form)
+
+class PriceAlertUpdateView(UpdateView):
+    model = PriceAlert
+    form_class = PriceAlertForm
+    template_name = 'trading_hub/price_alert_form.html'
+    success_url = reverse_lazy('price_alert_list')
+
+class PriceAlertDeleteView(DeleteView):
+    model = PriceAlert
+    template_name = 'trading_hub/price_alert_confirm_delete.html'
+    success_url = reverse_lazy('price_alert_list')
+
+from django.http import JsonResponse
+from .models import Asset, Transaction
+
+
+def mobile_dashboard(request):
+    # Implement the logic for the mobile dashboard
+    data = {
+        'message': 'Mobile dashboard data'
+    }
+    return JsonResponse(data)
+
+
+def mobile_asset_list(request):
+    # Implement the logic for listing assets
+    assets = Asset.objects.all()
+    data = {
+        'assets': list(assets.values())
+    }
+    return JsonResponse(data)
+
+
+def mobile_crypto_detail(request, code):
+    # Implement the logic for crypto detail
+    try:
+        asset = Asset.objects.get(code=code)
+        data = {
+            'asset': {
+                'code': asset.code,
+                'name': asset.name,
+                'price': asset.price,
+                'description': asset.description
+            }
+        }
+    except Asset.DoesNotExist:
+        data = {
+            'error': 'Asset not found'
+        }
+    return JsonResponse(data)
+
+
+def mobile_transaction_history(request):
+    # Implement the logic for transaction history
+    transactions = Transaction.objects.filter(user=request.user)
+    data = {
+        'transactions': list(transactions.values())
+    }
+    return JsonResponse(data)
+
+@csrf_exempt
+@require_POST
+def register_user(request):
+    try:
+        data = json.loads(request.body)
+        username = data['username']
+        password = data['password']
+        email = data['email']
+
+        if User.objects.filter(username=username).exists():
+            return JsonResponse({'error': 'Username already exists'}, status=400)
+
+        user = User.objects.create_user(username=username, password=password, email=email)
+        user.save()
+
+        return JsonResponse({'message': 'User registered successfully'}, status=201)
+    except KeyError:
+        return JsonResponse({'error': 'Invalid data'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+def register_user(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            return redirect('home')
+    else:
+        form = UserCreationForm()
+    return render(request, 'registration/register.html', {'form': form})
