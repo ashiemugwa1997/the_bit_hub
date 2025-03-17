@@ -1,0 +1,12 @@
+{% extends base_template|default:"base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block content %}
+{{ block.super }}
+<div id="webauthn-not-defined-error" style="display: none">
+    {% blocktrans %}
+    You must be using a compatible browser to use a security key with WebAuthn.
+    {% endblocktrans %}
+</div>
+{% endblock %}
