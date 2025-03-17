@@ -1,0 +1,29 @@
+{% extends 'trading_hub/base.html' %}
+
+{% block content %}
+<h2>Pending KYC Submissions</h2>
+<table>
+    <thead>
+        <tr>
+            <th>User</th>
+            <th>Document Type</th>
+            <th>Document Number</th>
+            <th>Submitted At</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for kyc in pending_kyc %}
+        <tr>
+            <td>{{ kyc.user.username }}</td>
+            <td>{{ kyc.document_type }}</td>
+            <td>{{ kyc.document_number }}</td>
+            <td>{{ kyc.submitted_at }}</td>
+            <td>
+                <a href="{% url 'kyc_verify' kyc.id %}">Verify/Reject</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
