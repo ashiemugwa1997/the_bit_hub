@@ -6,7 +6,9 @@
 </head>
 <!-- ...existing code... -->
 <li><a class="dropdown-item" href="{% url 'two_factor:profile' %}">Two-Factor Authentication</a></li>
+{% comment %}
 <li><a class="dropdown-item" href="{% url 'django_u2f:settings' %}">Security Key Settings</a></li>
+{% endcomment %}
 <!-- ...existing code... -->
 <footer>
     <p>© {{ current_year }} BitHub update</p>
