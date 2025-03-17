@@ -1,277 +1,85 @@
-{% extends "trading_hub/base.html" %}
-{% load static %}
+{% extends 'trading_hub/base.html' %}
+
+{% block title %}Recurring Orders{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="row mb-4">
-        <div class="col">
-            <h1 class="mb-0">Recurring Orders</h1>
-            <p class="text-muted">Automatically buy or sell crypto on a regular schedule</p>
-        </div>
-    </div>
-
-    <!-- Active Orders Section -->
-    <div class="card mb-4">
-        <div class="card-header bg-white">
-            <h5 class="mb-0">Active Recurring Orders</h5>
+<div class="container mt-4">
+    <h2>Your Recurring Orders</h2>
+    
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">All Recurring Orders</h5>
+            <a href="{% url 'asset_list' %}" class="btn btn-outline-primary btn-sm">Create New</a>
         </div>
         <div class="card-body p-0">
-            {% if active_orders %}
-            <div class="table-responsive">
-                <table class="table table-hover m-0">
-                    <thead>
-                        <tr>
-                            <th>Cryptocurrency</th>
-                            <th>Type</th>
-                            <th>Amount</th>
-                            <th>Frequency</th>
-                            <th>Next Execution</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for order in active_orders %}
-                        <tr>
-                            <td>
-                                <div class="d-flex align-items-center">
-                                    <img src="{{ order.cryptocurrency.icon.url|default:'https://via.placeholder.com/32' }}" alt="{{ order.cryptocurrency.code }}" width="24" height="24" class="me-2">
-                                    {{ order.cryptocurrency.name }} ({{ order.cryptocurrency.code }})
-                                </div>
-                            </td>
-                            <td>
-                                <span class="badge {% if order.order_type == 'buy' %}bg-success{% else %}bg-danger{% endif %}">
-                                    {{ order.get_order_type_display }}
-                                </span>
-                            </td>
-                            <td>
-                                {% if order.order_type == 'buy' %}
-                                ${{ order.amount|floatformat:2 }}
-                                {% else %}
-                                {{ order.amount }} {{ order.cryptocurrency.code }}
-                                {% endif %}
-                            </td>
-                            <td>{{ order.get_interval_display }}</td>
-                            <td>
-                                <div class="d-flex align-items-center">
-                                    <div class="text-nowrap">{{ order.next_execution|date:"M d, Y" }}</div>
-                                    <div class="ms-2 text-muted">{{ order.next_execution|date:"H:i" }}</div>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="btn-group">
-                                    <a href="{% url 'recurring_order_detail' order.id %}" class="btn btn-sm btn-outline-primary">View</a>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary pause-button" data-order-id="{{ order.id }}">Pause</button>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <div class="text-center py-5">
-                <div class="mb-3">
-                    <i class="fas fa-calendar-alt fa-3x text-muted"></i>
+            {% if orders %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Asset</th>
+                                <th>Type</th>
+                                <th>Amount</th>
+                                <th>Interval</th>
+                                <th>Next Execution</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in orders %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <img src="{{ order.cryptocurrency.logo_url }}" alt="{{ order.cryptocurrency.code }}" class="me-2" width="24">
+                                            {{ order.cryptocurrency.code }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if order.order_type == 'buy' %}bg-success{% else %}bg-danger{% endif %}">
+                                            {{ order.get_order_type_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ order.amount }}</td>
+                                    <td>{{ order.get_interval_display }}</td>
+                                    <td>{{ order.next_execution|date:"M d, Y" }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ order.status_color }}">
+                                            {{ order.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'recurring_order_detail' order_id=order.id %}" class="btn btn-outline-primary">View</a>
+                                            {% if order.status == 'active' %}
+                                                <form method="post" action="{% url 'recurring_order_detail' order_id=order.id %}" style="display:inline;">
+                                                    {% csrf_token %}
+                                                    <button type="submit" name="pause" class="btn btn-outline-warning">Pause</button>
+                                                </form>
+                                            {% elif order.status == 'paused' %}
+                                                <form method="post" action="{% url 'recurring_order_detail' order_id=order.id %}" style="display:inline;">
+                                                    {% csrf_token %}
+                                                    <button type="submit" name="resume" class="btn btn-outline-success">Resume</button>
+                                                </form>
+                                            {% endif %}
+                                            <form method="post" action="{% url 'recurring_order_detail' order_id=order.id %}" style="display:inline;">
+                                                {% csrf_token %}
+                                                <button type="submit" name="cancel" class="btn btn-outline-danger" onclick="return confirm('Are you sure you want to cancel this recurring order?');">Cancel</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
-                <h5>No active recurring orders</h5>
-                <p class="text-muted">Set up automatic buys or sells to grow your portfolio over time</p>
-                <a href="{% url 'asset_list' %}" class="btn btn-primary">Create Recurring Order</a>
-            </div>
+            {% else %}
+                <div class="text-center p-4">
+                    <p class="mb-2">You don't have any recurring orders yet.</p>
+                    <a href="{% url 'asset_list' %}" class="btn btn-primary">Create your first recurring order</a>
+                </div>
             {% endif %}
         </div>
     </div>
-
-    <!-- Paused Orders Section -->
-    {% if paused_orders %}
-    <div class="card mb-4">
-        <div class="card-header bg-white">
-            <h5 class="mb-0">Paused Orders</h5>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover m-0">
-                    <thead>
-                        <tr>
-                            <th>Cryptocurrency</th>
-                            <th>Type</th>
-                            <th>Amount</th>
-                            <th>Frequency</th>
-                            <th>Last Executed</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for order in paused_orders %}
-                        <tr>
-                            <td>
-                                <div class="d-flex align-items-center">
-                                    <img src="{{ order.cryptocurrency.icon.url|default:'https://via.placeholder.com/32' }}" alt="{{ order.cryptocurrency.code }}" width="24" height="24" class="me-2">
-                                    {{ order.cryptocurrency.name }} ({{ order.cryptocurrency.code }})
-                                </div>
-                            </td>
-                            <td>
-                                <span class="badge {% if order.order_type == 'buy' %}bg-success{% else %}bg-danger{% endif %}">
-                                    {{ order.get_order_type_display }}
-                                </span>
-                            </td>
-                            <td>
-                                {% if order.order_type == 'buy' %}
-                                ${{ order.amount|floatformat:2 }}
-                                {% else %}
-                                {{ order.amount }} {{ order.cryptocurrency.code }}
-                                {% endif %}
-                            </td>
-                            <td>{{ order.get_interval_display }}</td>
-                            <td>
-                                {% if order.last_executed %}
-                                {{ order.last_executed|date:"M d, Y" }}
-                                {% else %}
-                                Never
-                                {% endif %}
-                            </td>
-                            <td>
-                                <div class="btn-group">
-                                    <a href="{% url 'recurring_order_detail' order.id %}" class="btn btn-sm btn-outline-primary">View</a>
-                                    <button type="button" class="btn btn-sm btn-outline-success resume-button" data-order-id="{{ order.id }}">Resume</button>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Completed/Cancelled Orders Section -->
-    {% if completed_orders %}
-    <div class="card">
-        <div class="card-header bg-white">
-            <h5 class="mb-0">Completed & Cancelled Orders</h5>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table m-0">
-                    <thead>
-                        <tr>
-                            <th>Cryptocurrency</th>
-                            <th>Type</th>
-                            <th>Amount</th>
-                            <th>Frequency</th>
-                            <th>Status</th>
-                            <th>Last Executed</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="table-group-divider">
-                        {% for order in completed_orders %}
-                        <tr>
-                            <td>
-                                <div class="d-flex align-items-center">
-                                    <img src="{{ order.cryptocurrency.icon.url|default:'https://via.placeholder.com/32' }}" alt="{{ order.cryptocurrency.code }}" width="24" height="24" class="me-2">
-                                    {{ order.cryptocurrency.name }}
-                                </div>
-                            </td>
-                            <td>
-                                <span class="badge {% if order.order_type == 'buy' %}bg-success{% else %}bg-danger{% endif %}">
-                                    {{ order.get_order_type_display }}
-                                </span>
-                            </td>
-                            <td>
-                                {% if order.order_type == 'buy' %}
-                                ${{ order.amount|floatformat:2 }}
-                                {% else %}
-                                {{ order.amount }} {{ order.cryptocurrency.code }}
-                                {% endif %}
-                            </td>
-                            <td>{{ order.get_interval_display }}</td>
-                            <td><span class="badge bg-secondary">{{ order.get_status_display }}</span></td>
-                            <td>
-                                {% if order.last_executed %}
-                                {{ order.last_executed|date:"M d, Y" }}
-                                {% else %}
-                                Never
-                                {% endif %}
-                            </td>
-                            <td>
-                                <a href="{% url 'recurring_order_detail' order.id %}" class="btn btn-sm btn-outline-primary">View</a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    {% endif %}
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Pause Order functionality
-    document.querySelectorAll('.pause-button').forEach(button => {
-        button.addEventListener('click', function() {
-            const orderId = this.dataset.orderId;
-            if (confirm('Are you sure you want to pause this recurring order?')) {
-                fetch(`/recurring-order/${orderId}/pause/`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': getCookie('csrftoken'),
-                        'Content-Type': 'application/json'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        window.location.reload();
-                    } else {
-                        alert('Error: ' + data.message);
-                    }
-                });
-            }
-        });
-    });
-
-    // Resume Order functionality
-    document.querySelectorAll('.resume-button').forEach(button => {
-        button.addEventListener('click', function() {
-            const orderId = this.dataset.orderId;
-            if (confirm('Are you sure you want to resume this recurring order?')) {
-                fetch(`/recurring-order/${orderId}/resume/`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': getCookie('csrftoken'),
-                        'Content-Type': 'application/json'
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        window.location.reload();
-                    } else {
-                        alert('Error: ' + data.message);
-                    }
-                });
-            }
-        });
-    });
-
-    // Helper function to get CSRF token
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
-});
-</script>
 {% endblock %}

@@ -39,6 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'trading_hub.apps.TradingHubConfig',  # Add the trading_hub app
+    # Temporarily removed Django Q due to compatibility issues
+    # 'django_q',  # Add Django Q for async tasks and scheduling
 ]
 
 MIDDLEWARE = [
@@ -64,6 +66,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'trading_hub.context_processors.current_year',
             ],
         },
     },
@@ -149,3 +152,26 @@ else:
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
+
+# Commented out Django Q Configuration due to compatibility issues
+# Q_CLUSTER = {
+#     'name': 'BitHub',
+#     'workers': 4,
+#     'recycle': 500,
+#     'timeout': 60,
+#     'compress': True,
+#     'save_limit': 250,
+#     'queue_limit': 500,
+#     'cpu_affinity': 1,
+#     'label': 'Django Q',
+#     'redis': {
+#         'host': '127.0.0.1',
+#         'port': 6379,
+#         'db': 0,
+#         'password': None,
+#         'socket_timeout': None,
+#         'charset': 'utf-8',
+#         'errors': 'strict',
+#         'unix_socket_path': None,
+#     }
+# }

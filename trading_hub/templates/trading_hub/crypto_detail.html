@@ -192,6 +192,7 @@
                                         <li><hr class="dropdown-divider"></li>
                                         <li><a class="dropdown-item" href="{% url 'create_stop_order' crypto.code %}?side=buy">Stop Buy</a></li>
                                         <li><a class="dropdown-item" href="{% url 'create_stop_order' crypto.code %}?side=buy&stop_limit=true">Stop-Limit Buy</a></li>
+                                        <li><a class="dropdown-item" href="{% url 'create_recurring_order' crypto.code %}?side=buy">Recurring Buy</a></li>
                                     </ul>
                                 </div>
                                 <div class="dropdown">
@@ -204,6 +205,7 @@
                                         <li><hr class="dropdown-divider"></li>
                                         <li><a class="dropdown-item" href="{% url 'create_stop_order' crypto.code %}?side=sell">Stop Sell</a></li>
                                         <li><a class="dropdown-item" href="{% url 'create_stop_order' crypto.code %}?side=sell&stop_limit=true">Stop-Limit Sell</a></li>
+                                        <li><a class="dropdown-item" href="{% url 'create_recurring_order' crypto.code %}?side=sell">Recurring Sell</a></li>
                                     </ul>
                                 </div>
                                 <a href="{% url 'send_crypto' crypto.code %}" class="btn btn-outline-primary">Send</a>

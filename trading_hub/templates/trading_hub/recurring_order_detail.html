@@ -1,0 +1,247 @@
+{% extends "trading_hub/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Recurring Order Details</h4>
+                    <span class="badge bg-{{ order.status }}">{{ order.get_status_display }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center mb-3">
+                                <img src="{{ order.cryptocurrency.icon.url|default:'https://via.placeholder.com/48' }}" alt="{{ order.cryptocurrency.code }}" width="48" height="48" class="me-3">
+                                <div>
+                                    <h5 class="mb-0">{{ order.cryptocurrency.name }}</h5>
+                                    <div class="text-muted">{{ order.cryptocurrency.code }}</div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="text-muted mb-1">Order Type</div>
+                                <h5>
+                                    <span class="badge {% if order.order_type == 'buy' %}bg-success{% else %}bg-danger{% endif %}">
+                                        {{ order.get_order_type_display }}
+                                    </span>
+                                </h5>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="text-muted mb-1">Amount</div>
+                                <h5>
+                                    {% if order.order_type == 'buy' %}
+                                    ${{ order.amount|floatformat:2 }}
+                                    {% else %}
+                                    {{ order.amount }} {{ order.cryptocurrency.code }}
+                                    {% endif %}
+                                </h5>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="text-muted mb-1">Frequency</div>
+                                <h5>{{ order.get_interval_display }}</h5>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="text-muted mb-1">Start Date</div>
+                                <h5>{{ order.start_date|date:"F j, Y, g:i a" }}</h5>
+                            </div>
+                            
+                            {% if order.end_date %}
+                            <div class="mb-3">
+                                <div class="text-muted mb-1">End Date</div>
+                                <h5>{{ order.end_date|date:"F j, Y, g:i a" }}</h5>
+                            </div>
+                            {% endif %}
+                            
+                            {% if order.status == 'active' %}
+                            <div class="mb-3">
+                                <div class="text-muted mb-1">Next Execution</div>
+                                <h5>{{ order.next_execution|date:"F j, Y, g:i a" }}</h5>
+                                <div class="text-muted small">
+                                    {% if order.next_execution|date:"YmdHi" <= now|date:"YmdHi" %}
+                                    Scheduled for execution soon
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if order.last_executed %}
+                            <div class="mb-3">
+                                <div class="text-muted mb-1">Last Executed</div>
+                                <h5>{{ order.last_executed|date:"F j, Y, g:i a" }}</h5>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="border-top pt-3">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="text-muted mb-1">Source Wallet</div>
+                                    <h5>{{ order.from_wallet.name }} ({{ order.from_wallet.balance }} {{ order.from_wallet.currency_code }})</h5>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <div class="text-muted mb-1">Destination Wallet</div>
+                                    <h5>{{ order.to_wallet.name }} ({{ order.to_wallet.balance }} {{ order.to_wallet.currency_code }})</h5>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="border-top pt-3">
+                        <h5>Current Settings</h5>
+                        <div class="alert alert-info">
+                            {% if order.status == 'active' %}
+                                {% if order.order_type == 'buy' %}
+                                You are automatically buying <strong>${{ order.amount|floatformat:2 }}</strong> worth of <strong>{{ order.cryptocurrency.code }}</strong> <strong>{{ order.get_interval_display|lower }}</strong>.
+                                {% else %}
+                                You are automatically selling <strong>{{ order.amount }} {{ order.cryptocurrency.code }}</strong> <strong>{{ order.get_interval_display|lower }}</strong>.
+                                {% endif %}
+                                
+                                {% if order.end_date %}
+                                This will continue until <strong>{{ order.end_date|date:"F j, Y" }}</strong>.
+                                {% else %}
+                                This will continue indefinitely until cancelled.
+                                {% endif %}
+                            {% elif order.status == 'paused' %}
+                                This recurring order is currently paused. Resume it to continue.
+                            {% elif order.status == 'completed' %}
+                                This recurring order has completed its schedule.
+                            {% else %}
+                                This recurring order has been cancelled.
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Action buttons -->
+                    <div class="mt-4 d-flex flex-wrap gap-2">
+                        <a href="{% url 'recurring_order_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to List
+                        </a>
+                        
+                        {% if order.status == 'active' %}
+                        <button id="pauseBtn" class="btn btn-warning">
+                            <i class="fas fa-pause me-2"></i>Pause Order
+                        </button>
+                        {% elif order.status == 'paused' %}
+                        <button id="resumeBtn" class="btn btn-success">
+                            <i class="fas fa-play me-2"></i>Resume Order
+                        </button>
+                        {% endif %}
+                        
+                        {% if order.status == 'active' or order.status == 'paused' %}
+                        <button id="cancelBtn" class="btn btn-danger">
+                            <i class="fas fa-times me-2"></i>Cancel Order
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Transaction History</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if transactions %}
+                    <div class="list-group list-group-flush">
+                        {% for transaction in transactions %}
+                        <a href="{% url 'transaction_detail' transaction.id %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ transaction.amount }} {{ transaction.currency }}</h6>
+                                <small>{{ transaction.created_at|date:"M d, Y" }}</small>
+                            </div>
+                            <p class="mb-1 text-muted small">{{ transaction.description }}</p>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <p class="text-muted mb-0">No transactions yet</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const pauseBtn = document.getElementById('pauseBtn');
+    const resumeBtn = document.getElementById('resumeBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const orderId = '{{ order.id }}';
+    
+    if (pauseBtn) {
+        pauseBtn.addEventListener('click', function() {
+            if (confirm('Are you sure you want to pause this recurring order?')) {
+                sendAction('pause');
+            }
+        });
+    }
+    
+    if (resumeBtn) {
+        resumeBtn.addEventListener('click', function() {
+            if (confirm('Are you sure you want to resume this recurring order?')) {
+                sendAction('resume');
+            }
+        });
+    }
+    
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', function() {
+            if (confirm('Are you sure you want to cancel this recurring order? This action cannot be undone.')) {
+                sendAction('cancel');
+            }
+        });
+    }
+    
+    function sendAction(action) {
+        fetch(`/recurring-order/${orderId}/${action}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                window.location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        });
+    }
+    
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+</script>
+{% endblock %}

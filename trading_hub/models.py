@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.utils import timezone
 from decimal import Decimal
 import uuid
 
@@ -407,3 +408,228 @@ class StopOrder(models.Model):
             self.save()
             return True
         return False
+
+
+class RecurringOrder(models.Model):
+    INTERVAL_CHOICES = (
+        ('daily', 'Daily'),
+        ('weekly', 'Weekly'),
+        ('biweekly', 'Bi-Weekly'),
+        ('monthly', 'Monthly')
+    )
+    
+    ORDER_TYPE_CHOICES = (
+        ('buy', 'Buy'),
+        ('sell', 'Sell')
+    )
+    
+    STATUS_CHOICES = (
+        ('active', 'Active'),
+        ('paused', 'Paused'),
+        ('completed', 'Completed'),
+        ('cancelled', 'Cancelled')
+    )
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='recurring_orders')
+    cryptocurrency = models.ForeignKey(CryptoCurrency, on_delete=models.CASCADE)
+    order_type = models.CharField(max_length=4, choices=ORDER_TYPE_CHOICES)
+    amount = models.DecimalField(max_digits=24, decimal_places=8)  # Amount in crypto or USD
+    interval = models.CharField(max_length=10, choices=INTERVAL_CHOICES)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='active')
+    from_wallet = models.ForeignKey(Wallet, on_delete=models.CASCADE, related_name='recurring_order_source')
+    to_wallet = models.ForeignKey(Wallet, on_delete=models.CASCADE, related_name='recurring_order_destination', null=True, blank=True)
+    start_date = models.DateTimeField(default=timezone.now)
+    end_date = models.DateTimeField(null=True, blank=True)  # Optional end date
+    last_executed = models.DateTimeField(null=True, blank=True)
+    next_execution = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.order_type.upper()} {self.amount} {self.cryptocurrency.code} ({self.interval})"
+        
+    def calculate_next_execution(self):
+        """Calculate the next execution date based on the interval and last execution"""
+        now = timezone.now()
+        base_date = self.last_executed if self.last_executed else self.start_date
+        
+        if self.interval == 'daily':
+            next_date = base_date + timezone.timedelta(days=1)
+        elif self.interval == 'weekly':
+            next_date = base_date + timezone.timedelta(weeks=1)
+        elif self.interval == 'biweekly':
+            next_date = base_date + timezone.timedelta(weeks=2)
+        elif self.interval == 'monthly':
+            # Add one month (approximately handling month transitions)
+            next_month = base_date.month + 1
+            next_year = base_date.year + (next_month > 12)
+            if next_month > 12:
+                next_month -= 12
+            next_date = base_date.replace(year=next_year, month=next_month)
+        
+        # If the calculated next date is in the past (could happen after pausing/resuming)
+        # set it to the next occurrence from now
+        if next_date < now:
+            delta = now - base_date
+            if self.interval == 'daily':
+                days_passed = delta.days
+                next_date = now + timezone.timedelta(days=1)
+            elif self.interval == 'weekly':
+                weeks_passed = delta.days // 7 + 1
+                next_date = base_date + timezone.timedelta(weeks=weeks_passed)
+            elif self.interval == 'biweekly':
+                two_weeks_passed = delta.days // 14 + 1
+                next_date = base_date + timezone.timedelta(weeks=2*two_weeks_passed)
+            elif self.interval == 'monthly':
+                months_passed = delta.days // 30 + 1
+                next_month = base_date.month + months_passed
+                next_year = base_date.year + (next_month > 12)
+                if next_month > 12:
+                    next_month = next_month % 12
+                    if next_month == 0:
+                        next_month = 12
+                next_date = base_date.replace(year=next_year, month=next_month)
+        
+        return next_date
+    
+    def save(self, *args, **kwargs):
+        """Override save to update next_execution date"""
+        if not self.next_execution:
+            self.next_execution = self.calculate_next_execution()
+        super().save(*args, **kwargs)
+    
+    def pause(self):
+        """Pause the recurring order"""
+        if self.status == 'active':
+            self.status = 'paused'
+            self.save()
+            return True
+        return False
+    
+    def resume(self):
+        """Resume the recurring order"""
+        if self.status == 'paused':
+            self.status = 'active'
+            self.next_execution = self.calculate_next_execution()
+            self.save()
+            return True
+        return False
+    
+    def cancel(self):
+        """Cancel the recurring order"""
+        if self.status in ['active', 'paused']:
+            self.status = 'cancelled'
+            self.save()
+            return True
+        return False
+    
+    def execute(self):
+        """Execute this recurring order"""
+        if self.status != 'active':
+            return False
+            
+        try:
+            current_price = self.cryptocurrency.current_price_usd
+            
+            if self.order_type == 'buy':
+                if self.from_wallet.currency_code == 'USD':
+                    usd_amount = self.amount
+                    crypto_amount = usd_amount / current_price
+                else:
+                    # If amount is specified in crypto for a buy order
+                    crypto_amount = self.amount
+                    usd_amount = crypto_amount * current_price
+                
+                # Check if user has enough balance
+                if self.from_wallet.balance < usd_amount:
+                    print(f"Insufficient balance for recurring buy order {self.id}")
+                    return False
+                
+                # Create transaction
+                transaction = Transaction.objects.create(
+                    user=self.user,
+                    transaction_type='buy',
+                    amount=crypto_amount,
+                    currency=self.cryptocurrency.code,
+                    native_amount=usd_amount,
+                    native_currency='USD',
+                    from_wallet=self.from_wallet,
+                    to_wallet=self.to_wallet,
+                    description=f"Recurring buy order executed at {current_price}"
+                )
+            else:  # sell
+                if self.from_wallet.currency_code == self.cryptocurrency.code:
+                    crypto_amount = self.amount
+                    usd_amount = crypto_amount * current_price
+                else:
+                    # If amount is specified in USD for a sell order
+                    usd_amount = self.amount
+                    crypto_amount = usd_amount / current_price
+                
+                # Check if user has enough crypto
+                if self.from_wallet.balance < crypto_amount:
+                    print(f"Insufficient balance for recurring sell order {self.id}")
+                    return False
+                
+                # Create transaction
+                transaction = Transaction.objects.create(
+                    user=self.user,
+                    transaction_type='sell',
+                    amount=crypto_amount,
+                    currency=self.cryptocurrency.code,
+                    native_amount=usd_amount,
+                    native_currency='USD',
+                    from_wallet=self.from_wallet,
+                    to_wallet=self.to_wallet,
+                    description=f"Recurring sell order executed at {current_price}"
+                )
+            
+            # Complete the transaction
+            transaction.complete_transaction(successful=True)
+            
+            # Update recurring order
+            self.last_executed = timezone.now()
+            self.next_execution = self.calculate_next_execution()
+            
+            # Check if we've reached the end date
+            if self.end_date and self.next_execution > self.end_date:
+                self.status = 'completed'
+                
+            self.save()
+            return True
+                
+        except Exception as e:
+            print(f"Error executing recurring order: {e}")
+            return False
+
+
+class TradingPair(models.Model):
+    """Model to represent crypto-to-crypto trading pairs"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    base_currency = models.ForeignKey(CryptoCurrency, on_delete=models.CASCADE, related_name='base_trading_pairs')
+    quote_currency = models.ForeignKey(CryptoCurrency, on_delete=models.CASCADE, related_name='quote_trading_pairs')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_price = models.DecimalField(max_digits=24, decimal_places=8, null=True, blank=True)
+    volume_24h = models.DecimalField(max_digits=24, decimal_places=8, default=0)
+    price_change_24h_percent = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True)
+    
+    class Meta:
+        unique_together = ('base_currency', 'quote_currency')
+        verbose_name = 'Trading Pair'
+        verbose_name_plural = 'Trading Pairs'
+    
+    def __str__(self):
+        return f"{self.base_currency.code}/{self.quote_currency.code}"
+    
+    def get_pair_code(self):
+        """Return the trading pair code (e.g., BTC/ETH)"""
+        return f"{self.base_currency.code}/{self.quote_currency.code}"
+    
+    @property
+    def inverse_rate(self):
+        """Return the inverse exchange rate"""
+        if self.last_price and self.last_price != 0:
+            return Decimal('1') / self.last_price
+        return None
