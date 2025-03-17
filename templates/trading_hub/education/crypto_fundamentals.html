@@ -1,0 +1,125 @@
+{% extends "trading_hub/base.html" %}
+
+{% block title %}Cryptocurrency Fundamentals - BitHub Academy{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'education_home' %}">Academy</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Cryptocurrency Fundamentals</li>
+        </ol>
+    </nav>
+
+    <h1 class="mb-4">Cryptocurrency Fundamentals</h1>
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h2>What is Blockchain?</h2>
+                    <hr>
+                    
+                    <p>A blockchain is a distributed ledger that records transactions across many computers so that any involved record cannot be altered retroactively, without the alteration of all subsequent blocks.</p>
+                    
+                    <h4>Key Features of Blockchain Technology:</h4>
+                    <ul>
+                        <li><strong>Decentralization:</strong> No single entity has control over the entire network</li>
+                        <li><strong>Transparency:</strong> All transactions are visible to anyone on the network</li>
+                        <li><strong>Immutability:</strong> Once recorded, data cannot be altered</li>
+                        <li><strong>Security:</strong> Cryptographic techniques secure transactions</li>
+                    </ul>
+                    
+                    <p>Blockchain serves as the foundation technology for all cryptocurrencies, allowing them to function without a central authority.</p>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h2>Understanding Cryptocurrencies</h2>
+                    <hr>
+                    
+                    <p>Cryptocurrencies are digital or virtual currencies that use cryptography for security and operate on blockchain technology. Unlike traditional currencies issued by governments (fiat currencies), cryptocurrencies are typically not controlled by any central authority.</p>
+                    
+                    <h4>Types of Cryptocurrencies:</h4>
+                    <ul>
+                        <li><strong>Bitcoin (BTC):</strong> The first and most well-known cryptocurrency</li>
+                        <li><strong>Ethereum (ETH):</strong> A platform for decentralized applications and smart contracts</li>
+                        <li><strong>Stablecoins:</strong> Cryptocurrencies designed to maintain a stable value, often pegged to fiat currencies</li>
+                        <li><strong>Altcoins:</strong> Alternative cryptocurrencies launched after Bitcoin</li>
+                        <li><strong>Tokens:</strong> Digital assets built on top of existing blockchain platforms</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h2>Tokenomics</h2>
+                    <hr>
+                    
+                    <p>Tokenomics refers to the economics of a cryptocurrency or token. It encompasses all aspects that make a particular token valuable and attractive for investors.</p>
+                    
+                    <h4>Key Components of Tokenomics:</h4>
+                    <ul>
+                        <li><strong>Supply:</strong> Total, circulating, and maximum supply of tokens</li>
+                        <li><strong>Distribution:</strong> How tokens are allocated (team, investors, community)</li>
+                        <li><strong>Utility:</strong> What the token is used for within its ecosystem</li>
+                        <li><strong>Inflation/Deflation:</strong> Whether new tokens are created or destroyed over time</li>
+                        <li><strong>Governance:</strong> How token holders participate in decision-making</li>
+                    </ul>
+                    
+                    <p>Understanding tokenomics is crucial for evaluating the long-term potential of a cryptocurrency investment.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h3>Cryptocurrency Metrics</h3>
+                    <dl>
+                        <dt>Market Capitalization</dt>
+                        <dd>Price × Circulating Supply</dd>
+                        
+                        <dt>Volume</dt>
+                        <dd>Amount of cryptocurrency traded in 24 hours</dd>
+                        
+                        <dt>Circulating Supply</dt>
+                        <dd>Number of coins currently available and in circulation</dd>
+                        
+                        <dt>Total Supply</dt>
+                        <dd>Number of coins created, including those not yet distributed</dd>
+                        
+                        <dt>Maximum Supply</dt>
+                        <dd>Maximum number of coins that will ever exist</dd>
+                    </dl>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h3>Cryptocurrency Wallets</h3>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item"><strong>Hot Wallets:</strong> Connected to the internet, convenient but less secure</li>
+                        <li class="list-group-item"><strong>Cold Wallets:</strong> Offline storage, more secure for long-term holdings</li>
+                        <li class="list-group-item"><strong>Hardware Wallets:</strong> Physical devices designed to secure crypto</li>
+                        <li class="list-group-item"><strong>Paper Wallets:</strong> Physical documents containing keys</li>
+                        <li class="list-group-item"><strong>Custodial Wallets:</strong> Third party holds your crypto</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-body">
+                    <h3>Related Resources</h3>
+                    <ul class="list-unstyled">
+                        <li><a href="{% url 'trading_basics' %}">Trading Basics</a></li>
+                        <li><a href="{% url 'technical_analysis' %}">Technical Analysis</a></li>
+                        <li><a href="{% url 'platform_guide' %}">Platform Guide</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

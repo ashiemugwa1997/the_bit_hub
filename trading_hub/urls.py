@@ -94,4 +94,21 @@ urlpatterns = [
 
     # User registration
     path('register/', views.register_user, name='register_user'),
+    
+    # Educational resources
+    path('learn/', views.education_home, name='education_home'),
+    path('learn/trading-basics/', views.trading_basics, name='trading_basics'),
+    path('learn/crypto-fundamentals/', views.crypto_fundamentals, name='crypto_fundamentals'),
+    path('learn/technical-analysis/', views.technical_analysis, name='technical_analysis'),
+    path('learn/risk-management/', views.risk_management, name='risk_management'),
+    path('learn/platform-guide/', views.platform_guide, name='platform_guide'),
+]
+
+urlpatterns += [
+    # News feed
+    path('news/', views.news_feed, name='news_feed'),
+    path('news/<int:news_id>/', views.news_detail, name='news_detail'),
+    path('news/category/<str:category>/', views.news_category, name='news_category'),
+    path('news/crypto/<str:code>/', views.news_by_crypto, name='news_by_crypto'),
+    path('news/insights/', views.market_insights, name='market_insights'),
 ]

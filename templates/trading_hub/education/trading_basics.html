@@ -1,0 +1,104 @@
+{% extends "trading_hub/base.html" %}
+
+{% block title %}Trading Basics - BitHub Academy{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'education_home' %}">Academy</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Trading Basics</li>
+        </ol>
+    </nav>
+
+    <h1 class="mb-4">Trading Basics</h1>
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h2>Understanding Order Types</h2>
+                    <hr>
+                    
+                    <h4>Market Orders</h4>
+                    <p>A market order is an instruction to buy or sell an asset immediately at the current market price. When you place a market order, you're agreeing to pay whatever the current price is when your order executes.</p>
+                    <p><strong>Pros:</strong> Guaranteed execution, immediate transactions</p>
+                    <p><strong>Cons:</strong> No price guarantee, potential slippage in volatile markets</p>
+                    
+                    <h4>Limit Orders</h4>
+                    <p>A limit order allows you to set a specific price at which you want to buy or sell an asset. The order will only execute if the market reaches your specified price.</p>
+                    <ul>
+                        <li><strong>Buy Limit Order:</strong> Will only execute at the limit price or lower</li>
+                        <li><strong>Sell Limit Order:</strong> Will only execute at the limit price or higher</li>
+                    </ul>
+                    <p><strong>Pros:</strong> Price control, potential for better prices</p>
+                    <p><strong>Cons:</strong> No guarantee of execution if the market doesn't reach your price</p>
+                    
+                    <h4>Stop Orders</h4>
+                    <p>Stop orders become market orders when a specified price (the stop price) is reached.</p>
+                    <ul>
+                        <li><strong>Stop-Loss Order:</strong> Designed to limit an investor's loss on a position</li>
+                        <li><strong>Stop-Limit Order:</strong> Combines features of stop and limit orders</li>
+                    </ul>
+                    <p><strong>Pros:</strong> Automated risk management, pre-planned exit strategy</p>
+                    <p><strong>Cons:</strong> Can be triggered by temporary price fluctuations</p>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h2>Market Terminology</h2>
+                    <hr>
+                    
+                    <dl>
+                        <dt>Bull Market</dt>
+                        <dd>A market characterized by rising prices and optimistic investor sentiment.</dd>
+                        
+                        <dt>Bear Market</dt>
+                        <dd>A market characterized by falling prices and pessimistic investor sentiment.</dd>
+                        
+                        <dt>Spread</dt>
+                        <dd>The difference between the bid price (what buyers are willing to pay) and the ask price (what sellers are willing to accept).</dd>
+                        
+                        <dt>Volume</dt>
+                        <dd>The total amount of a cryptocurrency that has been traded within a specific period.</dd>
+                        
+                        <dt>Market Cap</dt>
+                        <dd>The total value of a cryptocurrency, calculated by multiplying the current price by the total circulating supply.</dd>
+                        
+                        <dt>Liquidity</dt>
+                        <dd>The ability to quickly buy or sell an asset without causing a significant change in its price.</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h3>Quick Tips for Beginners</h3>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">Start with small amounts</li>
+                        <li class="list-group-item">Research before investing</li>
+                        <li class="list-group-item">Diversify your portfolio</li>
+                        <li class="list-group-item">Use limit orders to control prices</li>
+                        <li class="list-group-item">Keep records of all trades</li>
+                        <li class="list-group-item">Never invest more than you can afford to lose</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-body">
+                    <h3>Related Resources</h3>
+                    <ul class="list-unstyled">
+                        <li><a href="{% url 'crypto_fundamentals' %}">Cryptocurrency Fundamentals</a></li>
+                        <li><a href="{% url 'risk_management' %}">Risk Management</a></li>
+                        <li><a href="{% url 'platform_guide' %}">Platform Guide</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

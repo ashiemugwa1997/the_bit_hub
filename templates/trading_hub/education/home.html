@@ -1,0 +1,78 @@
+{% extends "trading_hub/base.html" %}
+
+{% block title %}Learn Cryptocurrency Trading - BitHub Academy{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col-lg-8 mx-auto text-center">
+            <h1 class="display-4">BitHub Academy</h1>
+            <p class="lead">Expand your knowledge about cryptocurrency and learn how to trade effectively.</p>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h3 class="card-title">Trading Basics</h3>
+                    <p class="card-text">Learn the fundamentals of trading, order types, and market terminology.</p>
+                    <a href="{% url 'trading_basics' %}" class="btn btn-primary">Start Learning</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h3 class="card-title">Crypto Fundamentals</h3>
+                    <p class="card-text">Understand blockchain technology, tokenomics, and how cryptocurrencies work.</p>
+                    <a href="{% url 'crypto_fundamentals' %}" class="btn btn-primary">Explore</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h3 class="card-title">Technical Analysis</h3>
+                    <p class="card-text">Learn how to analyze price charts and identify potential trading opportunities.</p>
+                    <a href="{% url 'technical_analysis' %}" class="btn btn-primary">Learn More</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h3 class="card-title">Risk Management</h3>
+                    <p class="card-text">Important strategies to protect your capital and manage risk effectively.</p>
+                    <a href="{% url 'risk_management' %}" class="btn btn-primary">Get Started</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h3 class="card-title">Platform Guide</h3>
+                    <p class="card-text">How to use BitHub platform features to maximize your trading experience.</p>
+                    <a href="{% url 'platform_guide' %}" class="btn btn-primary">View Guide</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h3 class="card-title">Video Tutorials</h3>
+                    <p class="card-text">Watch step-by-step video guides on trading and using the BitHub platform.</p>
+                    <a href="#" class="btn btn-primary">Watch Videos</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

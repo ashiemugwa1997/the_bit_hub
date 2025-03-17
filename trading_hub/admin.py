@@ -80,3 +80,12 @@ class StopOrderAdmin(admin.ModelAdmin):
     search_fields = ('user__username', 'cryptocurrency__code', 'cryptocurrency__name')
     date_hierarchy = 'created_at'
     readonly_fields = ('id', 'created_at', 'updated_at')
+
+@admin.register(News)
+class NewsAdmin(admin.ModelAdmin):
+    list_display = ('title', 'source', 'published_at', 'sentiment', 'featured')
+    list_filter = ('source', 'sentiment', 'featured', 'published_at')
+    search_fields = ('title', 'content', 'source')
+    filter_horizontal = ('related_cryptocurrencies',)
+    date_hierarchy = 'published_at'
+    list_editable = ('featured', 'sentiment')

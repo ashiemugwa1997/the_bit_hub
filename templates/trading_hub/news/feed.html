@@ -1,0 +1,107 @@
+{% extends "trading_hub/base.html" %}
+{% load static %}
+
+{% block title %}Crypto News - BitHub{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="mb-4">Cryptocurrency News</h1>
+    
+    {% if featured_articles %}
+    <!-- Featured News Carousel -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <h2 class="h4 mb-3">Featured News</h2>
+            <div id="featuredNewsCarousel" class="carousel slide" data-bs-ride="carousel">
+                <div class="carousel-indicators">
+                    {% for article in featured_articles %}
+                    <button type="button" data-bs-target="#featuredNewsCarousel" data-bs-slide-to="{{ forloop.counter0 }}" 
+                            {% if forloop.first %}class="active"{% endif %}></button>
+                    {% endfor %}
+                </div>
+                <div class="carousel-inner">
+                    {% for article in featured_articles %}
+                    <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                        <div class="card bg-dark text-white">
+                            {% if article.image_url %}
+                            <img src="{{ article.image_url }}" class="card-img" alt="{{ article.title }}" style="max-height: 400px; object-fit: cover;">
+                            {% else %}
+                            <img src="{% static 'images/news-placeholder.jpg' %}" class="card-img" alt="{{ article.title }}" style="max-height: 400px; object-fit: cover;">
+                            {% endif %}
+                            <div class="card-img-overlay d-flex flex-column justify-content-end" style="background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);">
+                                <h3 class="card-title">{{ article.title }}</h3>
+                                <p class="card-text">{{ article.published_at|date:"F j, Y" }} | {{ article.source }}</p>
+                                <a href="{% url 'news_detail' article.id %}" class="btn btn-primary">Read More</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <button class="carousel-control-prev" type="button" data-bs-target="#featuredNewsCarousel" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#featuredNewsCarousel" data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Next</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Categories -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{% url 'news_feed' %}" class="btn btn-outline-primary">All</a>
+                <a href="{% url 'news_category' 'market' %}" class="btn btn-outline-primary">Market</a>
+                <a href="{% url 'news_category' 'technology' %}" class="btn btn-outline-primary">Technology</a>
+                <a href="{% url 'news_category' 'regulation' %}" class="btn btn-outline-primary">Regulation</a>
+                <a href="{% url 'market_insights' %}" class="btn btn-outline-primary">Analysis</a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Latest News -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="h4 mb-3">Latest News</h2>
+        </div>
+    </div>
+    
+    <div class="row g-4">
+        {% for article in news_articles %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100">
+                {% if article.image_url %}
+                <img src="{{ article.image_url }}" class="card-img-top" alt="{{ article.title }}" style="height: 180px; object-fit: cover;">
+                {% else %}
+                <img src="{% static 'images/news-placeholder.jpg' %}" class="card-img-top" alt="{{ article.title }}" style="height: 180px; object-fit: cover;">
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="card-title">{{ article.title }}</h5>
+                    <p class="card-text text-muted small">{{ article.published_at|date:"F j, Y" }} | {{ article.source }}</p>
+                    <p class="card-text">{{ article.content|truncatewords:25 }}</p>
+                </div>
+                <div class="card-footer bg-transparent border-top-0">
+                    <a href="{% url 'news_detail' article.id %}" class="btn btn-sm btn-primary">Read More</a>
+                    
+                    {% if article.sentiment == 'positive' %}
+                    <span class="badge bg-success float-end">Positive</span>
+                    {% elif article.sentiment == 'negative' %}
+                    <span class="badge bg-danger float-end">Negative</span>
+                    {% else %}
+                    <span class="badge bg-secondary float-end">Neutral</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <p class="text-center">No news articles found.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

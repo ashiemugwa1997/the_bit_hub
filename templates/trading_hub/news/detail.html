@@ -1,0 +1,129 @@
+{% extends "trading_hub/base.html" %}
+{% load static %}
+
+{% block title %}{{ article.title }} - BitHub News{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'news_feed' %}">News</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Article</li>
+        </ol>
+    </nav>
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Main Article -->
+            <div class="card mb-4">
+                {% if article.image_url %}
+                <img src="{{ article.image_url }}" class="card-img-top" alt="{{ article.title }}">
+                {% endif %}
+                <div class="card-body">
+                    <h1 class="card-title">{{ article.title }}</h1>
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <p class="text-muted mb-0">Published on {{ article.published_at|date:"F j, Y" }}</p>
+                            <p class="mb-0">Source: <a href="{{ article.source_url }}" target="_blank" rel="noopener noreferrer">{{ article.source }}</a></p>
+                        </div>
+                        
+                        <div>
+                            {% if article.sentiment == 'positive' %}
+                            <span class="badge bg-success">Positive</span>
+                            {% elif article.sentiment == 'negative' %}
+                            <span class="badge bg-danger">Negative</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Neutral</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="article-content">
+                        {{ article.content|linebreaks }}
+                    </div>
+                    
+                    <!-- Categories and Related Cryptos -->
+                    <div class="mt-4">
+                        {% if article.categories %}
+                            <p class="mb-1">
+                                <strong>Categories:</strong> 
+                                {% for category in article.categories.split|slice:":5" %}
+                                    <a href="{% url 'news_category' category %}" class="badge bg-primary text-decoration-none">{{ category }}</a>
+                                {% endfor %}
+                            </p>
+                        {% endif %}
+                        
+                        {% if article.related_cryptocurrencies.exists %}
+                            <p class="mb-0">
+                                <strong>Related:</strong>
+                                {% for crypto in article.related_cryptocurrencies.all %}
+                                    <a href="{% url 'news_by_crypto' crypto.code %}" class="badge bg-info text-decoration-none">{{ crypto.code }}</a>
+                                {% endfor %}
+                            </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Share Links -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5>Share this article</h5>
+                    <div class="d-flex gap-2">
+                        <a href="https://twitter.com/intent/tweet?url={{ request.build_absolute_uri }}&text={{ article.title|urlencode }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                            Twitter
+                        </a>
+                        <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ request.build_absolute_uri }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                            LinkedIn
+                        </a>
+                        <a href="https://t.me/share/url?url={{ request.build_absolute_uri }}&text={{ article.title|urlencode }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                            Telegram
+                        </a>
+                        <a href="mailto:?subject={{ article.title|urlencode }}&body={{ request.build_absolute_uri }}" class="btn btn-sm btn-outline-primary">
+                            Email
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Related News -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Related News</h5>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                    {% for related in related_news %}
+                        <li class="list-group-item">
+                            <a href="{% url 'news_detail' related.id %}" class="text-decoration-none">
+                                <h6 class="mb-1">{{ related.title }}</h6>
+                            </a>
+                            <p class="small text-muted mb-0">{{ related.published_at|date:"F j, Y" }}</p>
+                        </li>
+                    {% empty %}
+                        <li class="list-group-item">No related news found</li>
+                    {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Market Overview Widget -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Market Overview</h5>
+                </div>
+                <div class="card-body">
+                    <!-- This could be a real-time widget showing market data -->
+                    <p>Bitcoin (BTC): ${{ btc_price|default:"--" }}</p>
+                    <p>Ethereum (ETH): ${{ eth_price|default:"--" }}</p>
+                    <p>Market Cap: ${{ market_cap|default:"--" }}</p>
+                    <a href="{% url 'asset_list' %}" class="btn btn-sm btn-outline-primary">View All Markets</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -744,3 +744,29 @@ class Asset(models.Model):
     class Meta:
         verbose_name = 'Asset'
         verbose_name_plural = 'Assets'
+
+
+class News(models.Model):
+    title = models.CharField(max_length=255)
+    content = models.TextField()
+    source = models.CharField(max_length=100)
+    source_url = models.URLField()
+    image_url = models.URLField(null=True, blank=True)
+    published_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    categories = models.CharField(max_length=255, blank=True)
+    related_cryptocurrencies = models.ManyToManyField(CryptoCurrency, blank=True)
+    sentiment = models.CharField(
+        max_length=10,
+        choices=[('positive', 'Positive'), ('neutral', 'Neutral'), ('negative', 'Negative')],
+        default='neutral'
+    )
+    featured = models.BooleanField(default=False)
+    
+    def __str__(self):
+        return self.title
+    
+    class Meta:
+        verbose_name = 'News Article'
+        verbose_name_plural = 'News Articles'
+        ordering = ['-published_at']

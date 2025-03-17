@@ -5,10 +5,39 @@
     <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
 </head>
 <!-- ...existing code... -->
+
+<!-- Main navigation bar section - Find this section in your template -->
+<ul class="navbar-nav me-auto mb-2 mb-lg-0">
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'asset_list' %}">Assets</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'wallet_list' %}">Wallets</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'transaction_history' %}">Transactions</a>
+    </li>
+    <!-- Add News Feed link here -->
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'news_feed' %}">News</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'education_home' %}">Learn</a>
+    </li>
+</ul>
+
+<!-- ...existing code... -->
+
+<!-- User dropdown section - Find this section in your template -->
 <li><a class="dropdown-item" href="{% url 'two_factor:profile' %}">Two-Factor Authentication</a></li>
 {% comment %}
 <li><a class="dropdown-item" href="{% url 'django_u2f:settings' %}">Security Key Settings</a></li>
 {% endcomment %}
+<!-- Remove the incorrectly positioned Learn link if it exists here -->
+
 <!-- ...existing code... -->
 <footer>
     <p>© {{ current_year }} BitHub update</p>

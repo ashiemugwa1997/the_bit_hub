@@ -20,6 +20,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login, authenticate
+from django.db.models import Q
 
 @login_required
 def dashboard(request):
@@ -1286,3 +1287,96 @@ def mobile_profile(request):
         return JsonResponse(data)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+def education_home(request):
+    """View for the main education/learning resources page"""
+    return render(request, 'trading_hub/education/home.html')
+
+def trading_basics(request):
+    """Educational content about trading basics"""
+    return render(request, 'trading_hub/education/trading_basics.html')
+
+def crypto_fundamentals(request):
+    """Educational content about cryptocurrency fundamentals"""
+    return render(request, 'trading_hub/education/crypto_fundamentals.html')
+
+def technical_analysis(request):
+    """Educational content about technical analysis"""
+    return render(request, 'trading_hub/education/technical_analysis.html')
+
+def risk_management(request):
+    """Educational content about risk management"""
+    return render(request, 'trading_hub/education/risk_management.html')
+
+def platform_guide(request):
+    """Guide for using BitHub platform features"""
+    return render(request, 'trading_hub/education/platform_guide.html')
+
+@login_required
+def news_feed(request):
+    """View for the main news feed page"""
+    news_articles = News.objects.all().order_by('-published_at')[:20]
+    featured_articles = News.objects.filter(featured=True).order_by('-published_at')[:5]
+    
+    context = {
+        'news_articles': news_articles,
+        'featured_articles': featured_articles,
+    }
+    return render(request, 'trading_hub/news/feed.html', context)
+
+@login_required
+def news_detail(request, news_id):
+    """View for a single news article"""
+    article = get_object_or_404(News, id=news_id)
+    related_news = News.objects.filter(
+        Q(categories__icontains=article.categories) | 
+        Q(related_cryptocurrencies__in=article.related_cryptocurrencies.all())
+    ).exclude(id=article.id).distinct()[:5]
+    
+    context = {
+        'article': article,
+        'related_news': related_news,
+    }
+    return render(request, 'trading_hub/news/detail.html', context)
+
+@login_required
+def news_category(request, category):
+    """View for news filtered by category"""
+    news_articles = News.objects.filter(categories__icontains=category).order_by('-published_at')
+    
+    context = {
+        'news_articles': news_articles,
+        'category': category,
+    }
+    return render(request, 'trading_hub/news/category.html', context)
+
+@login_required
+def news_by_crypto(request, code):
+    """View for news related to a specific cryptocurrency"""
+    try:
+        crypto = CryptoCurrency.objects.get(code=code.upper())
+        news_articles = News.objects.filter(related_cryptocurrencies=crypto).order_by('-published_at')
+        
+        context = {
+            'news_articles': news_articles,
+            'crypto': crypto,
+        }
+        return render(request, 'trading_hub/news/by_crypto.html', context)
+    except CryptoCurrency.DoesNotExist:
+        messages.error(request, f"Cryptocurrency {code} not found.")
+        return redirect('news_feed')
+
+@login_required
+def market_insights(request):
+    """View for showing market insights and analysis"""
+    # Get news with analysis or insights
+    articles = News.objects.filter(
+        Q(categories__icontains='analysis') | 
+        Q(categories__icontains='insight') |
+        Q(categories__icontains='opinion')
+    ).order_by('-published_at')[:10]
+    
+    context = {
+        'articles': articles,
+    }
+    return render(request, 'trading_hub/news/insights.html', context)
