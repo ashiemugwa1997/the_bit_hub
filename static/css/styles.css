@@ -1,0 +1,118 @@
+/* 
+  BitHub Custom Styles
+  Main stylesheet for the BitHub Trading Platform
+*/
+
+/* ===== General Styles ===== */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1 0 auto;
+}
+
+/* ===== Cards ===== */
+.card {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+/* ===== Buttons ===== */
+.btn {
+  border-radius: 4px;
+}
+
+.btn-primary {
+  background-color: #3498db;
+  border-color: #3498db;
+}
+
+.btn-primary:hover {
+  background-color: #2980b9;
+  border-color: #2980b9;
+}
+
+/* ===== Navigation ===== */
+.navbar {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+  font-weight: 700;
+}
+
+/* ===== Dashboard Styles ===== */
+.stats-card {
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.stats-card:hover {
+  background-color: #f8f9fa;
+}
+
+.crypto-icon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+/* ===== Transaction History ===== */
+.transaction-badge {
+  width: 100px;
+  text-align: center;
+}
+
+/* ===== Footer ===== */
+footer {
+  padding: 20px 0;
+  margin-top: 30px;
+}
+
+/* ===== Responsive Adjustments ===== */
+@media (max-width: 768px) {
+  .card {
+    margin-bottom: 15px;
+  }
+}
+
+/* ===== Education Section ===== */
+.education-card {
+  height: 100%;
+  transition: transform 0.3s ease;
+}
+
+.education-card:hover {
+  transform: translateY(-5px);
+}
+
+/* ===== News Section ===== */
+.news-card {
+  height: 100%;
+}
+
+.news-image {
+  height: 180px;
+  object-fit: cover;
+}
+
+.sentiment-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}

@@ -1,0 +1,39 @@
+{% extends "trading_hub/base.html" %}
+{% load static %}
+
+{% block title %}{{ category|title }} News - BitHub{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="mb-4">{{ category|title }} News</h1>
+    
+    <!-- Category news content -->
+    <div class="row g-4">
+        {% for article in news_articles %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100">
+                {% if article.image_url %}
+                <img src="{{ article.image_url }}" class="card-img-top" alt="{{ article.title }}" 
+                     style="height: 180px; object-fit: cover;">
+                {% else %}
+                <img src="{% static 'images/news-placeholder.jpg' %}" class="card-img-top" alt="{{ article.title }}" 
+                     style="height: 180px; object-fit: cover;">
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="card-title">{{ article.title }}</h5>
+                    <p class="card-text text-muted small">{{ article.published_at|date:"F j, Y" }} | {{ article.source }}</p>
+                    <p class="card-text">{{ article.content|truncatewords:25 }}</p>
+                </div>
+                <div class="card-footer bg-transparent border-top-0">
+                    <a href="{% url 'news_detail' article.id %}" class="btn btn-sm btn-primary">Read More</a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <p class="text-center">No news articles found in this category.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

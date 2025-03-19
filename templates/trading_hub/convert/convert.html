@@ -1,0 +1,64 @@
+{% extends "trading_hub/base.html" %}
+{% load static %}
+
+{% block title %}Convert {{ from_crypto.code }} to {{ to_crypto.code }} - BitHub{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title mb-4">Convert {{ from_crypto.code }} to {{ to_crypto.code }}</h2>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label class="form-label">Available Balance</label>
+                            <div class="form-control bg-light">
+                                {{ from_wallet.balance }} {{ from_crypto.code }}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="amount" class="form-label">Amount to Convert</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="amount" name="amount" 
+                                       step="any" min="0" max="{{ from_wallet.balance }}" required>
+                                <span class="input-group-text">{{ from_crypto.code }}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label">You'll Receive (Estimated)</label>
+                            <div class="form-control bg-light" id="estimatedAmount">
+                                0.00 {{ to_crypto.code }}
+                            </div>
+                            <small class="text-muted">
+                                Current Rate: 1 {{ from_crypto.code }} = {{ conversion_rate|floatformat:8 }} {{ to_crypto.code }}
+                            </small>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Convert</button>
+                            <a href="{% url 'conversion_pairs' %}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.getElementById('amount').addEventListener('input', function() {
+    const amount = parseFloat(this.value) || 0;
+    const rate = {{ conversion_rate }};
+    const estimated = (amount * rate).toFixed(8);
+    document.getElementById('estimatedAmount').textContent = `${estimated} {{ to_crypto.code }}`;
+});
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,173 @@
+{% extends "trading_hub/base.html" %}
+{% load static %}
+
+{% block title %}API Keys - BitHub{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">API Keys</h1>
+        <a href="{% url 'api_key_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus-circle me-2"></i>Create New API Key
+        </a>
+    </div>
+    
+    <div class="card shadow mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Your API Keys</h5>
+        </div>
+        <div class="card-body">
+            {% if api_keys %}
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Key</th>
+                                <th>Permissions</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Last Used</th>
+                                <th>Expires</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for key in api_keys %}
+                            <tr>
+                                <td>{{ key.name }}</td>
+                                <td><code>{{ key.key|slice:":8" }}...{{ key.key|slice:"-8:" }}</code></td>
+                                <td>
+                                    {% if key.permissions == 'read' %}
+                                        <span class="badge bg-info">Read Only</span>
+                                    {% elif key.permissions == 'read_write' %}
+                                        <span class="badge bg-warning">Read & Write</span>
+                                    {% elif key.permissions == 'admin' %}
+                                        <span class="badge bg-danger">Admin</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if key.is_active %}
+                                        {% if key.is_expired %}
+                                            <span class="badge bg-secondary">Expired</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-danger">Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ key.created_at|date:"M d, Y" }}</td>
+                                <td>{% if key.last_used %}{{ key.last_used|date:"M d, Y" }}{% else %}Never{% endif %}</td>
+                                <td>{% if key.expires_at %}{{ key.expires_at|date:"M d, Y" }}{% else %}Never{% endif %}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="{% url 'api_key_detail' key.id %}" class="btn btn-outline-primary" title="View">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'api_key_update' key.id %}" class="btn btn-outline-secondary" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'api_key_regenerate' key.id %}" class="btn btn-outline-warning" title="Regenerate Secret">
+                                            <i class="fas fa-key"></i>
+                                        </a>
+                                        <a href="{% url 'api_key_delete' key.id %}" class="btn btn-outline-danger" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <p class="mb-0">You don't have any API keys yet. <a href="{% url 'api_key_create' %}">Create your first API key</a> to integrate with the BitHub platform.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="card shadow">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">API Documentation</h5>
+        </div>
+        <div class="card-body">
+            <p>Our API enables developers to integrate BitHub's cryptocurrency trading services into their applications.</p>
+            <p>With our API you can:</p>
+            <ul>
+                <li>Access real-time cryptocurrency market data</li>
+                <li>View and manage wallets</li>
+                <li>Place and track orders</li>
+                <li>Execute trades programmatically</li>
+                <li>Monitor price alerts</li>
+            </ul>
+            <a href="{% url 'api_documentation' %}" class="btn btn-primary">View API Documentation</a>
+        </div>
+    </div>
+</div>
+
+{% if request.session.new_api_key %}
+<!-- Modal for displaying new API key details -->
+<div class="modal fade" id="apiKeyModal" tabindex="-1" aria-labelledby="apiKeyModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title" id="apiKeyModalLabel">Important: Save Your API Credentials</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    This is the <strong>only time</strong> we'll show you the secret. Please save it now.
+                </div>
+                
+                <p><strong>API Key:</strong></p>
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" value="{{ request.session.new_api_key.key }}" id="apiKey" readonly>
+                    <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('apiKey')">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </div>
+                
+                <p><strong>API Secret:</strong></p>
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" value="{{ request.session.new_api_key.secret }}" id="apiSecret" readonly>
+                    <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('apiSecret')">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">I've Saved My Credentials</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Show the modal
+    var apiKeyModal = new bootstrap.Modal(document.getElementById('apiKeyModal'));
+    apiKeyModal.show();
+    
+    // Function to copy to clipboard
+    window.copyToClipboard = function(elementId) {
+        var copyText = document.getElementById(elementId);
+        copyText.select();
+        copyText.setSelectionRange(0, 99999); // For mobile devices
+        document.execCommand("copy");
+        
+        // Show feedback
+        var button = copyText.nextElementSibling;
+        var originalHTML = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-check"></i>';
+        setTimeout(() => {
+            button.innerHTML = originalHTML;
+        }, 1500);
+    }
+});
+</script>
+{% endif %}
+{% endblock %}
