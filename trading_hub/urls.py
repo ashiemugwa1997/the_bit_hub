@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 from . import views
 from .views import PriceAlertListView, PriceAlertCreateView, PriceAlertUpdateView, PriceAlertDeleteView
 
@@ -102,6 +102,11 @@ urlpatterns = [
     path('learn/technical-analysis/', views.technical_analysis, name='technical_analysis'),
     path('learn/risk-management/', views.risk_management, name='risk_management'),
     path('learn/platform-guide/', views.platform_guide, name='platform_guide'),
+
+    # Add conversion URLs
+    path('convert/', views.conversion_pairs, name='conversion_pairs'),
+    path('convert/<str:from_code>/<str:to_code>/', views.convert_crypto, name='convert_crypto'),
+    path('api/conversion-rate/<str:from_code>/<str:to_code>/', views.get_conversion_rate, name='get_conversion_rate'),
 ]
 
 urlpatterns += [
@@ -111,4 +116,58 @@ urlpatterns += [
     path('news/category/<str:category>/', views.news_category, name='news_category'),
     path('news/crypto/<str:code>/', views.news_by_crypto, name='news_by_crypto'),
     path('news/insights/', views.market_insights, name='market_insights'),
+]
+
+urlpatterns += [
+    # API management
+    path('api/keys/', views.api_key_list, name='api_key_list'),
+    path('api/keys/create/', views.APIKeyCreateView.as_view(), name='api_key_create'),
+    path('api/keys/<uuid:pk>/', views.APIKeyDetailView.as_view(), name='api_key_detail'),
+    path('api/keys/<uuid:pk>/update/', views.APIKeyUpdateView.as_view(), name='api_key_update'),
+    path('api/keys/<uuid:pk>/delete/', views.APIKeyDeleteView.as_view(), name='api_key_delete'),
+    path('api/keys/<uuid:pk>/regenerate/', views.api_key_regenerate_secret, name='api_key_regenerate'),
+    path('api/docs/', views.api_documentation, name='api_documentation'),
+    
+    # API endpoints
+    path('api/v1/', include('trading_hub.api.urls')),
+]
+
+# Add API patterns only if rest_framework is installed
+api_patterns = []
+try:
+    import rest_framework
+    api_patterns = [
+        # API management
+        path('api/keys/', views.api_key_list, name='api_key_list'),
+        path('api/keys/create/', views.APIKeyCreateView.as_view(), name='api_key_create'),
+        path('api/keys/<uuid:pk>/', views.APIKeyDetailView.as_view(), name='api_key_detail'),
+        path('api/keys/<uuid:pk>/update/', views.APIKeyUpdateView.as_view(), name='api_key_update'),
+        path('api/keys/<uuid:pk>/delete/', views.APIKeyDeleteView.as_view(), name='api_key_delete'),
+        path('api/keys/<uuid:pk>/regenerate/', views.api_key_regenerate_secret, name='api_key_regenerate'),
+        path('api/docs/', views.api_documentation, name='api_documentation'),
+    ]
+    
+    # Try to include API v1 endpoints
+    try:
+        api_patterns.append(path('api/v1/', include('trading_hub.api.urls')))
+    except (ImportError, ModuleNotFoundError):
+        pass
+        
+except ImportError:
+    # REST framework not installed, API functionality will be limited
+    pass
+
+urlpatterns += api_patterns
+
+# Add tax reporting URLs
+urlpatterns += [
+    # Tax reporting center
+    path('taxes/', views.tax_center, name='tax_center'),
+    path('taxes/create-report/', views.create_tax_report, name='create_tax_report'),
+    path('taxes/reports/<uuid:report_id>/', views.tax_report_detail, name='tax_report_detail'),
+    path('taxes/reports/<uuid:report_id>/download/', views.download_tax_report, name='download_tax_report'),
+    path('taxes/summary/', views.annual_tax_summary, name='annual_tax_summary'),  # Default route
+    path('taxes/summary/<int:year>/', views.annual_tax_summary, name='annual_tax_summary_with_year'),
+    path('taxes/calculator/', views.cost_basis_calculator, name='cost_basis_calculator'),
+    path('api/taxes/calculate-cost-basis/', views.api_calculate_cost_basis, name='api_calculate_cost_basis'),
 ]

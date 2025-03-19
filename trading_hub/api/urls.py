@@ -1,4 +1,3 @@
-// filepath: d:\the_bit_hub\trading_hub\api\urls.py
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views

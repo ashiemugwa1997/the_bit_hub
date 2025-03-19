@@ -1,4 +1,3 @@
-// filepath: d:\the_bit_hub\trading_hub\api\permissions.py
 from rest_framework import permissions
 from trading_hub.models import APIKey
 

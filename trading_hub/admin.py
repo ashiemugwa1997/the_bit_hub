@@ -9,7 +9,8 @@ from .models import (
     PriceHistory,
     PaymentMethod,
     LimitOrder,
-    StopOrder
+    StopOrder,
+    News  # Add the News model import here
 )
 
 # Register CoinbaseUser with custom admin display

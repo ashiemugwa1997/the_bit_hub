@@ -53,7 +53,7 @@
                         <div class="col-md-3 mb-3">
                             <div class="form-group">
                                 <label for="taxYear">Select Tax Year:</label>
-                                <select class="form-select" id="taxYear" onchange="window.location.href='{% url 'annual_tax_summary' %}' + this.value;">
+                                <select class="form-select" id="taxYear" onchange="navigateToYear(this.value);">
                                     {% for year in tax_years %}
                                     <option value="{{ year }}" {% if year == request.resolver_match.kwargs.year %}selected{% endif %}>{{ year }}</option>
                                     {% endfor %}
@@ -132,4 +132,14 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function navigateToYear(year) {
+    if (year) {
+        window.location.href = "{% url 'annual_tax_summary' %}" + year + "/";
+    }
+}
+</script>
 {% endblock %}

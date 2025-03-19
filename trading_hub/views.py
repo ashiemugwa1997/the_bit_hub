@@ -7,20 +7,38 @@ from django.db import transaction
 from decimal import Decimal
 import json
 import uuid
+import random
+import string
 from datetime import datetime, timedelta
-from .models import CryptoCurrency, Wallet, Transaction, LimitOrder, StopOrder, RecurringOrder, TradingPair, Device, KYC, BankAccount
-from .forms import KYCForm, AddressForm, BankAccountForm, PriceAlertForm
+from .models import (
+    CryptoCurrency, Wallet, Transaction, LimitOrder, StopOrder, 
+    RecurringOrder, TradingPair, Device, KYC, BankAccount, News,
+    PriceAlert, APIKey, TaxReport, TaxTransaction  # Added TaxReport and TaxTransaction import here
+)
+from .forms import KYCForm, AddressForm, BankAccountForm, PriceAlertForm, TaxReportForm  # Added TaxReportForm import here
 from django.contrib.admin.views.decorators import staff_member_required
 from django.urls import reverse
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView  # Added DetailView import here
 from django.urls import reverse_lazy
-from .models import PriceAlert
 from django.contrib.auth.models import User
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_http_methods  # Added require_http_methods import here
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login, authenticate
 from django.db.models import Q
+from django.contrib.auth.mixins import LoginRequiredMixin
+from .services.tax_calculator import TaxCalculator  # Added TaxCalculator import here
+import os  # Added os import here
+
+# Import the API form if the module exists
+try:
+    from .api.forms import APIKeyForm
+except (ImportError, ModuleNotFoundError):
+    # Create a simple placeholder form if API module isn't available
+    class APIKeyForm(forms.ModelForm):
+        class Meta:
+            model = APIKey
+            fields = ['name', 'permissions', 'allowed_ips']
 
 @login_required
 def dashboard(request):
@@ -818,6 +836,120 @@ def create_crypto_trade(request, base_code, quote_code):
         'quote_wallet': quote_wallet,
     })
 
+@login_required
+def conversion_pairs(request):
+    """View to show available conversion pairs"""
+    cryptocurrencies = CryptoCurrency.objects.all().order_by('code')
+    user_wallets = Wallet.objects.filter(user=request.user)
+    
+    wallet_balances = {
+        wallet.currency_code: wallet.balance 
+        for wallet in user_wallets
+    }
+    
+    context = {
+        'cryptocurrencies': cryptocurrencies,
+        'wallet_balances': wallet_balances
+    }
+    return render(request, 'trading_hub/convert/pairs.html', context)
+
+@login_required
+def convert_crypto(request, from_code, to_code):
+    """Handle cryptocurrency conversion"""
+    try:
+        from_crypto = CryptoCurrency.objects.get(code=from_code.upper())
+        to_crypto = CryptoCurrency.objects.get(code=to_code.upper())
+        
+        # Get or create user's wallets
+        from_wallet = Wallet.objects.get_or_create(
+            user=request.user,
+            currency_code=from_code.upper(),
+            defaults={
+                'name': f"My {from_crypto.name} Wallet",
+                'balance': Decimal('0'),
+                'address': str(uuid.uuid4())
+            }
+        )[0]
+        
+        to_wallet = Wallet.objects.get_or_create(
+            user=request.user,
+            currency_code=to_code.upper(),
+            defaults={
+                'name': f"My {to_crypto.name} Wallet",
+                'balance': Decimal('0'),
+                'address': str(uuid.uuid4())
+            }
+        )[0]
+        
+        if request.method == 'POST':
+            amount = Decimal(request.POST.get('amount', '0'))
+            if amount <= 0:
+                raise ValueError("Amount must be greater than zero")
+                
+            if from_wallet.balance < amount:
+                messages.error(request, f"Insufficient {from_code} balance")
+                return redirect('convert_crypto', from_code=from_code, to_code=to_code)
+                
+            # Calculate conversion rate using USD prices
+            conversion_rate = to_crypto.current_price_usd / from_crypto.current_price_usd
+            converted_amount = amount * conversion_rate
+            
+            # Create and execute the conversion transaction
+            with transaction.atomic():
+                tx = Transaction.objects.create(
+                    user=request.user,
+                    transaction_type='convert',
+                    amount=amount,
+                    currency=from_code,
+                    native_amount=amount * from_crypto.current_price_usd,
+                    native_currency='USD',
+                    status='completed',
+                    description=f"Converted {amount} {from_code} to {converted_amount} {to_code}",
+                    from_wallet=from_wallet,
+                    to_wallet=to_wallet
+                )
+                
+                # Update wallet balances
+                from_wallet.balance -= amount
+                from_wallet.save()
+                
+                to_wallet.balance += converted_amount
+                to_wallet.save()
+                
+            messages.success(request, f"Successfully converted {amount} {from_code} to {converted_amount:.8f} {to_code}")
+            return redirect('dashboard')
+                
+    except (CryptoCurrency.DoesNotExist, ValueError, TypeError) as e:
+        messages.error(request, str(e))
+        return redirect('conversion_pairs')
+    
+    context = {
+        'from_crypto': from_crypto,
+        'to_crypto': to_crypto,
+        'from_wallet': from_wallet,
+        'to_wallet': to_wallet,
+        'conversion_rate': to_crypto.current_price_usd / from_crypto.current_price_usd
+    }
+    return render(request, 'trading_hub/convert/convert.html', context)
+
+@login_required
+def get_conversion_rate(request, from_code, to_code):
+    """API endpoint to get current conversion rate"""
+    try:
+        from_crypto = CryptoCurrency.objects.get(code=from_code.upper())
+        to_crypto = CryptoCurrency.objects.get(code=to_code.upper())
+        
+        conversion_rate = to_crypto.current_price_usd / from_crypto.current_price_usd
+        
+        return JsonResponse({
+            'from': from_code,
+            'to': to_code,
+            'rate': float(conversion_rate),
+            'timestamp': timezone.now().isoformat()
+        })
+    except CryptoCurrency.DoesNotExist:
+        return JsonResponse({'error': 'Invalid cryptocurrency code'}, status=400)
+
 def profile(request):
     return render(request, 'trading_hub/profile.html')
 
@@ -1380,3 +1512,305 @@ def market_insights(request):
         'articles': articles,
     }
     return render(request, 'trading_hub/news/insights.html', context)
+
+@login_required
+def api_key_list(request):
+    """View to list user's API keys"""
+    api_keys = APIKey.objects.filter(user=request.user)
+    
+    context = {
+        'api_keys': api_keys,
+    }
+    return render(request, 'trading_hub/api/key_list.html', context)
+
+class APIKeyCreateView(LoginRequiredMixin, CreateView):
+    """View to create a new API key"""
+    model = APIKey
+    form_class = APIKeyForm
+    template_name = 'trading_hub/api/key_form.html'
+    success_url = reverse_lazy('api_key_list')
+    
+    def form_valid(self, form):
+        form.instance.user = self.request.user
+        response = super().form_valid(form)
+        
+        # Show the API key and secret to the user only once
+        self.request.session['new_api_key'] = {
+            'key': self.object.key,
+            'secret': self.object.secret
+        }
+        
+        return response
+
+class APIKeyDetailView(LoginRequiredMixin, DetailView):
+    """View to see API key details"""
+    model = APIKey
+    template_name = 'trading_hub/api/key_detail.html'
+    context_object_name = 'api_key'
+    
+    def get_queryset(self):
+        return APIKey.objects.filter(user=self.request.user)
+
+class APIKeyUpdateView(LoginRequiredMixin, UpdateView):
+    """View to update an API key"""
+    model = APIKey
+    form_class = APIKeyForm
+    template_name = 'trading_hub/api/key_form.html'
+    success_url = reverse_lazy('api_key_list')
+    
+    def get_queryset(self):
+        return APIKey.objects.filter(user=self.request.user)
+    
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        # Remove expiry_days field for updates
+        if 'expiry_days' in form.fields:
+            del form.fields['expiry_days']
+        return form
+
+class APIKeyDeleteView(LoginRequiredMixin, DeleteView):
+    """View to delete an API key"""
+    model = APIKey
+    template_name = 'trading_hub/api/key_confirm_delete.html'
+    success_url = reverse_lazy('api_key_list')
+    
+    def get_queryset(self):
+        return APIKey.objects.filter(user=self.request.user)
+
+@login_required
+def api_key_regenerate_secret(request, pk):
+    """View to regenerate API key secret"""
+    try:
+        api_key = APIKey.objects.get(pk=pk, user=request.user)
+    except APIKey.DoesNotExist:
+        messages.error(request, "API key not found.")
+        return redirect('api_key_list')
+    
+    if request.method == 'POST':
+        # Generate new secret
+        api_key.secret = APIKey.generate_secret()
+        api_key.save()
+        
+        # Store new secret to display once
+        request.session['new_api_key'] = {
+            'key': api_key.key,
+            'secret': api_key.secret
+        }
+        
+        messages.success(request, "API key secret regenerated successfully.")
+        return redirect('api_key_detail', pk=api_key.pk)
+    
+    return render(request, 'trading_hub/api/key_regenerate_secret.html', {'api_key': api_key})
+
+@login_required
+def api_documentation(request):
+    """View for API documentation"""
+    return render(request, 'trading_hub/api/documentation.html')
+
+@login_required
+def tax_center(request):
+    """Main view for tax reporting center"""
+    # Get existing tax reports for this user
+    reports = TaxReport.objects.filter(user=request.user).order_by('-tax_year', '-created_at')
+    
+    # Get tax years with transactions
+    tax_years = Transaction.objects.filter(
+        user=request.user
+    ).dates('created_at', 'year')
+    
+    # Convert QuerySet to list of years
+    years = [date.year for date in tax_years]
+    
+    # Current year should also be an option
+    current_year = timezone.now().year
+    if current_year not in years:
+        years.append(current_year)
+    
+    # Sort years in descending order
+    years.sort(reverse=True)
+    
+    context = {
+        'reports': reports,
+        'tax_years': years
+    }
+    
+    return render(request, 'trading_hub/tax/center.html', context)
+
+@login_required
+def create_tax_report(request):
+    """View for creating a new tax report"""
+    if request.method == 'POST':
+        form = TaxReportForm(request.POST)
+        if form.is_valid():
+            tax_year = form.cleaned_data['tax_year']
+            cost_basis_method = form.cleaned_data['cost_basis_method']
+            report_format = form.cleaned_data['report_format']
+            include_unrealized = form.cleaned_data['include_unrealized_gains']
+            
+            # Initialize tax calculator
+            calculator = TaxCalculator(
+                user=request.user,
+                tax_year=tax_year,
+                cost_basis_method=cost_basis_method
+            )
+            
+            # Generate the report
+            tax_report = calculator.generate_tax_report(
+                report_format=report_format,
+                include_unrealized=include_unrealized
+            )
+            
+            messages.success(request, "Tax report generated successfully.")
+            return redirect('tax_report_detail', report_id=tax_report.id)
+    else:
+        form = TaxReportForm()
+    
+    context = {
+        'form': form
+    }
+    
+    return render(request, 'trading_hub/tax/create_report.html', context)
+
+@login_required
+def tax_report_detail(request, report_id):
+    """View for tax report details"""
+    tax_report = get_object_or_404(TaxReport, id=report_id, user=request.user)
+    
+    # Get tax transactions for this report
+    tax_transactions = TaxTransaction.objects.filter(
+        transaction__user=request.user,
+        tax_year=tax_report.tax_year
+    ).select_related('transaction').order_by('-transaction__created_at')
+    
+    # Calculate summary numbers
+    short_term_gains = sum(tx.gain_loss for tx in tax_transactions if not tx.is_long_term)
+    long_term_gains = sum(tx.gain_loss for tx in tax_transactions if tx.is_long_term)
+    total_gains = short_term_gains + long_term_gains
+    
+    context = {
+        'report': tax_report,
+        'tax_transactions': tax_transactions,
+        'short_term_gains': short_term_gains,
+        'long_term_gains': long_term_gains,
+        'total_gains': total_gains
+    }
+    
+    return render(request, 'trading_hub/tax/report_detail.html', context)
+
+@login_required
+@require_http_methods(["GET"])
+def download_tax_report(request, report_id):
+    """View for downloading a tax report file"""
+    tax_report = get_object_or_404(TaxReport, id=report_id, user=request.user)
+    
+    if not tax_report.report_file:
+        messages.error(request, "Report file not found.")
+        return redirect('tax_report_detail', report_id=tax_report.id)
+    
+    # Get the file path
+    file_path = tax_report.report_file.path
+    
+    # Check if file exists
+    if not os.path.exists(file_path):
+        messages.error(request, "Report file not found on server.")
+        return redirect('tax_report_detail', report_id=tax_report.id)
+    
+    # Determine content type based on file extension
+    content_type = 'text/csv'  # Default for CSV
+    if file_path.endswith('.pdf'):
+        content_type = 'application/pdf'
+        
+    # Return the file as a download response
+    with open(file_path, 'rb') as f:
+        response = HttpResponse(f.read(), content_type=content_type)
+        response['Content-Disposition'] = f'attachment; filename="{os.path.basename(file_path)}"'
+        return response
+
+@login_required
+def annual_tax_summary(request, year=None):
+    """View for annual tax summary"""
+    # If year is not specified, use current year
+    if year is None:
+        year = timezone.now().year
+    
+    # Initialize tax calculator
+    calculator = TaxCalculator(
+        user=request.user,
+        tax_year=year
+    )
+    
+    # Get annual summary
+    summary = calculator.get_annual_summary()
+    
+    # Get unrealized gains
+    unrealized_gains = calculator.calculate_unrealized_gains()
+    
+    context = {
+        'year': year,
+        'summary': summary,
+        'unrealized_gains': unrealized_gains
+    }
+    
+    return render(request, 'trading_hub/tax/annual_summary.html', context)
+
+@login_required
+def cost_basis_calculator(request):
+    """Interactive cost basis calculator"""
+    cryptocurrencies = CryptoCurrency.objects.all()
+    
+    context = {
+        'cryptocurrencies': cryptocurrencies
+    }
+    
+    return render(request, 'trading_hub/tax/cost_basis_calculator.html', context)
+
+@login_required
+def api_calculate_cost_basis(request):
+    """API endpoint for cost basis calculator"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    try:
+        data = json.loads(request.body)
+        crypto_code = data.get('crypto_code')
+        cost_basis_method = data.get('cost_basis_method', 'fifo')
+        tax_year = data.get('tax_year', timezone.now().year)
+        
+        if not crypto_code:
+            return JsonResponse({'error': 'Cryptocurrency code is required'}, status=400)
+        
+        # Initialize tax calculator
+        calculator = TaxCalculator(
+            user=request.user,
+            tax_year=tax_year,
+            cost_basis_method=cost_basis_method
+        )
+        
+        # Calculate cost basis
+        transactions = calculator.calculate_cost_basis(crypto_code)
+        
+        # Format results for API response
+        results = []
+        for tx_data in transactions:
+            tx = tx_data['transaction']
+            results.append({
+                'date': tx.created_at.isoformat(),
+                'type': tx.transaction_type,
+                'amount': float(tx.amount),
+                'proceeds': float(tx_data['proceeds']),
+                'cost_basis': float(tx_data['cost_basis']),
+                'gain_loss': float(tx_data['gain_loss']),
+                'is_long_term': tx_data['is_long_term']
+            })
+        
+        return JsonResponse({
+            'results': results,
+            'summary': {
+                'total_proceeds': float(sum(tx['proceeds'] for tx in results)),
+                'total_cost_basis': float(sum(tx['cost_basis'] for tx in results)),
+                'total_gain_loss': float(sum(tx['gain_loss'] for tx in results))
+            }
+        })
+    
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

@@ -5,6 +5,8 @@ from django.dispatch import receiver
 from django.utils import timezone
 from decimal import Decimal
 import uuid
+import random
+import string
 
 
 class CoinbaseUser(models.Model):
@@ -770,3 +772,147 @@ class News(models.Model):
         verbose_name = 'News Article'
         verbose_name_plural = 'News Articles'
         ordering = ['-published_at']
+
+
+class APIKey(models.Model):
+    """API keys for third-party developers to access BitHub API"""
+    API_KEY_PERMISSIONS = (
+        ('read', 'Read Only'),
+        ('read_write', 'Read & Write'),
+        ('admin', 'Admin Access')
+    )
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='api_keys')
+    name = models.CharField(max_length=100, help_text="A name to help you identify this API key")
+    key = models.CharField(max_length=64, unique=True)
+    secret = models.CharField(max_length=128)  # Will be hashed before storage
+    permissions = models.CharField(max_length=20, choices=API_KEY_PERMISSIONS, default='read')
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_used = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    allowed_ips = models.TextField(blank=True, null=True, 
+                                  help_text="Comma-separated list of IP addresses allowed to use this key")
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.name}"
+    
+    def is_expired(self):
+        """Check if the API key has expired"""
+        if self.expires_at and self.expires_at < timezone.now():
+            return True
+        return False
+    
+    def has_valid_ip(self, request_ip):
+        """Check if the request IP is allowed to use this key"""
+        if not self.allowed_ips:
+            return True
+        
+        allowed_ips = [ip.strip() for ip in self.allowed_ips.split(',')]
+        return request_ip in allowed_ips
+    
+    def save(self, *args, **kwargs):
+        """Override save to ensure the key is set"""
+        if not self.key:
+            self.key = self.generate_key()
+            self.secret = self.generate_secret()
+        super().save(*args, **kwargs)
+    
+    @staticmethod
+    def generate_key():
+        """Generate a random API key"""
+        return ''.join(random.choices(string.ascii_letters + string.digits, k=32))
+    
+    @staticmethod
+    def generate_secret():
+        """Generate a random API secret"""
+        return ''.join(random.choices(string.ascii_letters + string.digits, k=64))
+
+
+class APIRequestLog(models.Model):
+    """Log of API requests for monitoring and rate limiting"""
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='api_requests')
+    api_key = models.ForeignKey(APIKey, on_delete=models.SET_NULL, null=True, related_name='requests')
+    endpoint = models.CharField(max_length=255)
+    method = models.CharField(max_length=10)  # GET, POST, PUT, DELETE, etc.
+    status_code = models.IntegerField()
+    ip_address = models.GenericIPAddressField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+    execution_time = models.FloatField(help_text="API request execution time in milliseconds")
+    
+    def __str__(self):
+        return f"{self.user.username if self.user else 'Anonymous'} - {self.endpoint} - {self.status_code}"
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['user', '-timestamp']),
+            models.Index(fields=['api_key', '-timestamp']),
+            models.Index(fields=['endpoint', '-timestamp']),
+            models.Index(fields=['ip_address', '-timestamp']),
+        ]
+
+
+class TaxReport(models.Model):
+    """Model for storing generated tax reports"""
+    TAX_YEAR_CHOICES = [(year, str(year)) for year in range(2020, timezone.now().year + 1)]
+    
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('processing', 'Processing'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+    )
+    
+    REPORT_FORMAT_CHOICES = (
+        ('csv', 'CSV'),
+        ('pdf', 'PDF'),
+        ('turbotax', 'TurboTax'),
+        ('cointracker', 'CoinTracker'),
+    )
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tax_reports')
+    tax_year = models.IntegerField(choices=TAX_YEAR_CHOICES, default=timezone.now().year)
+    report_format = models.CharField(max_length=20, choices=REPORT_FORMAT_CHOICES, default='csv')
+    include_unrealized_gains = models.BooleanField(default=False)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    report_file = models.FileField(upload_to='tax_reports/', null=True, blank=True)
+    error_message = models.TextField(blank=True, null=True)
+    
+    def __str__(self):
+        return f"{self.user.username}'s {self.tax_year} Tax Report"
+    
+    def generate_report(self):
+        """Start generating the tax report"""
+        self.status = 'processing'
+        self.save()
+        
+        try:
+            # This would be implemented as a background task
+            # For now, we'll just simulate it
+            
+            # Mark as completed
+            self.status = 'completed'
+            self.completed_at = timezone.now()
+            self.save()
+            return True
+        except Exception as e:
+            self.status = 'failed'
+            self.error_message = str(e)
+            self.save()
+            return False
+
+class TaxTransaction(models.Model):
+    """Model for storing tax-relevant transaction details"""
+    transaction = models.OneToOneField(Transaction, on_delete=models.CASCADE, related_name='tax_info')
+    cost_basis = models.DecimalField(max_digits=24, decimal_places=8, null=True, blank=True)
+    gain_loss = models.DecimalField(max_digits=24, decimal_places=8, null=True, blank=True)
+    is_long_term = models.BooleanField(null=True, blank=True)  # True for holdings > 1 year
+    tax_year = models.IntegerField()
+    tax_category = models.CharField(max_length=50, blank=True, null=True)  # e.g., mining, airdrop, capital_gain
+    
+    def __str__(self):
+        return f"Tax info for {self.transaction}"

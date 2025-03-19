@@ -38,7 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'trading_hub.apps.TradingHubConfig',  # Add the trading_hub app
+    'trading_hub.apps.TradingHubConfig',
     # 'django_q',  # Comment out Django Q due to compatibility issues
     'django_otp',
     'django_otp.plugins.otp_totp',
@@ -47,9 +47,15 @@ INSTALLED_APPS = [
     'two_factor',
     'phonenumber_field',
     # 'django_u2f',  # Temporarily commented out due to compatibility issues
+    
+    # API related apps
+    'rest_framework',
+    'drf_yasg',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',  # Should be at the top
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -209,3 +215,29 @@ ALLOWED_IPS = [
 # Stripe settings
 STRIPE_SECRET_KEY = 'sk_test_51JvisNEgswk7aQ98INM3cer8URjOah60zPpIlvtEVEwuzLfyJHej1QPOSX07KBb3KUC5nidwyEPesGBCeMs9VLjg00zosA81Ax'
 STRIPE_PUBLISHABLE_KEY = 'pk_test_51JvisNEgswk7aQ984rSLm96APZYfJNW8apESNCq5nbpVxVTWyGGSSV9yGNs4iK4cRftXqftD2jg7EHtoo3qYCpzv00c1OUHT8r'
+
+# REST Framework settings
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'trading_hub.api.authentication.APIKeyAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 50,
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle'
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '10/minute',
+        'user': '60/minute'
+    }
+}
+
+# CORS settings for API
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:8000",
+]

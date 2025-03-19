@@ -1,5 +1,6 @@
 from django import forms
 from .models import KYC, BankAccount, PriceAlert
+from django.utils import timezone
 
 class KYCForm(forms.ModelForm):
     class Meta:
@@ -37,3 +38,39 @@ class PriceAlertForm(forms.ModelForm):
     class Meta:
         model = PriceAlert
         fields = ['symbol', 'target_price']
+
+class TaxReportForm(forms.Form):
+    tax_year = forms.IntegerField(
+        label="Tax Year", 
+        initial=timezone.now().year,
+        widget=forms.Select(choices=[(year, year) for year in range(2020, timezone.now().year + 1)])
+    )
+    
+    cost_basis_method = forms.ChoiceField(
+        label="Cost Basis Method",
+        choices=[
+            ('fifo', 'First In, First Out (FIFO)'),
+            ('lifo', 'Last In, First Out (LIFO)'),
+            ('hifo', 'Highest In, First Out (HIFO)'),
+            ('acb', 'Average Cost Basis (ACB)')
+        ],
+        initial='fifo',
+        help_text="Method used to calculate cost basis for your crypto assets"
+    )
+    
+    report_format = forms.ChoiceField(
+        label="Report Format",
+        choices=[
+            ('csv', 'CSV'),
+            ('pdf', 'PDF'),
+            ('turbotax', 'TurboTax Compatible')
+        ],
+        initial='csv'
+    )
+    
+    include_unrealized_gains = forms.BooleanField(
+        label="Include Unrealized Gains",
+        required=False,
+        initial=False,
+        help_text="Include potential gains/losses from assets you still hold"
+    )

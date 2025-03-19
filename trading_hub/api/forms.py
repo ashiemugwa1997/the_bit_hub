@@ -1,4 +1,3 @@
-// filepath: d:\the_bit_hub\trading_hub\api\forms.py
 from django import forms
 from trading_hub.models import APIKey
 from datetime import datetime, timedelta
@@ -23,7 +22,7 @@ class APIKeyForm(forms.ModelForm):
     
     class Meta:
         model = APIKey
-        fields = ['name', 'permissions', 'allowed_ips', 'expiry_days']
+        fields = ['name', 'permissions', 'allowed_ips']
         
     def save(self, commit=True):
         instance = super().save(commit=False)

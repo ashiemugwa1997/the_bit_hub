@@ -1,0 +1,245 @@
+{% extends "trading_hub/base.html" %}
+{% load static %}
+
+{% block title %}Dashboard - BitHub{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="display-5 fw-bold">Welcome to BitHub, {{ request.user.username }}</h1>
+            <p class="text-muted">Your cryptocurrency trading dashboard</p>
+        </div>
+    </div>
+
+    <!-- Portfolio Summary Card -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Portfolio Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h2 class="display-6">${{ portfolio_value|floatformat:2 }}</h2>
+                            <p class="text-muted">Total Value</p>
+                            
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-start mt-4">
+                                <a href="{% url 'asset_list' %}" class="btn btn-primary me-md-2">
+                                    <i class="fas fa-chart-line me-2"></i>Trade Assets
+                                </a>
+                                <a href="{% url 'wallet_list' %}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-wallet me-2"></i>View Wallets
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <!-- Simple pie chart of portfolio distribution -->
+                            <canvas id="portfolioDistribution" width="100%" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Transactions and Trending Cryptos -->
+    <div class="row">
+        <!-- Recent Transactions -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Recent Transactions</h5>
+                    <a href="{% url 'transaction_history' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Amount</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for tx in recent_transactions %}
+                                <tr>
+                                    <td>{{ tx.get_transaction_type_display }}</td>
+                                    <td>{{ tx.amount }} {{ tx.currency }}</td>
+                                    <td>{{ tx.created_at|date:"M d, Y" }}</td>
+                                    <td>
+                                        {% if tx.status == 'completed' %}
+                                            <span class="badge bg-success">Completed</span>
+                                        {% elif tx.status == 'pending' %}
+                                            <span class="badge bg-warning">Pending</span>
+                                        {% elif tx.status == 'failed' %}
+                                            <span class="badge bg-danger">Failed</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ tx.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center">No recent transactions</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Trending Cryptocurrencies -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Trending Cryptocurrencies</h5>
+                    <a href="{% url 'asset_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Price</th>
+                                    <th>24h Change</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for crypto in trending_cryptos %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'crypto_detail' crypto.code %}" class="d-flex align-items-center text-decoration-none">
+                                            {% if crypto.icon %}
+                                                <img src="{{ crypto.icon.url }}" alt="{{ crypto.name }}" width="24" height="24" class="me-2">
+                                            {% endif %}
+                                            {{ crypto.name }}
+                                        </a>
+                                    </td>
+                                    <td>${{ crypto.current_price_usd|floatformat:2 }}</td>
+                                    <td class="{% if crypto.price_change_24h_percent > 0 %}text-success{% elif crypto.price_change_24h_percent < 0 %}text-danger{% endif %}">
+                                        {% if crypto.price_change_24h_percent > 0 %}+{% endif %}{{ crypto.price_change_24h_percent|floatformat:2 }}%
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'buy_crypto' crypto.code %}" class="btn btn-outline-success">Buy</a>
+                                            <a href="{% url 'sell_crypto' crypto.code %}" class="btn btn-outline-danger">Sell</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center">No trending cryptocurrencies</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Links Section -->
+    <div class="row mt-2">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Quick Links</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="d-grid">
+                                <a href="{% url 'limit_order_list' %}" class="btn btn-outline-primary">
+                                    <i class="fas fa-exchange-alt me-2"></i>Active Orders
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-grid">
+                                <a href="{% url 'news_feed' %}" class="btn btn-outline-primary">
+                                    <i class="fas fa-newspaper me-2"></i>Market News
+                                </a>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-grid">
+                                <a href="{% url 'education_home' %}" class="btn btn-outline-primary">
+                                    <i class="fas fa-graduation-cap me-2"></i>Learning Center
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('portfolioDistribution').getContext('2d');
+    
+    // Extract data from template
+    const walletData = [
+        {% for wallet in wallet_data %}
+            {
+                name: '{{ wallet.code }}',
+                value: {{ wallet.value|floatformat:2 }},
+                color: getRandomColor()
+            },
+        {% endfor %}
+    ];
+    
+    // Prepare data for chart
+    const labels = walletData.map(w => w.name);
+    const data = walletData.map(w => w.value);
+    const colors = walletData.map(w => w.color);
+    
+    // Create chart
+    new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: colors,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        font: {
+                            size: 10
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    // Helper function to generate random colors
+    function getRandomColor() {
+        const letters = '0123456789ABCDEF';
+        let color = '#';
+        for (let i = 0; i < 6; i++) {
+            color += letters[Math.floor(Math.random() * 16)];
+        }
+        return color;
+    }
+});
+</script>
+{% endblock %}

@@ -1,4 +1,3 @@
-// filepath: d:\the_bit_hub\trading_hub\api\authentication.py
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 from django.utils import timezone
