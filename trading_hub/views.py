@@ -1386,14 +1386,28 @@ def register_user(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 def register_user(request):
+    """View for handling user registration"""
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
+            # Optional: Add email field
+            email = request.POST.get('email')
+            if email:
+                user.email = email
+                user.save()
+            
+            # Log the user in after registration
+            username = form.cleaned_data.get('username')
+            raw_password = form.cleaned_data.get('password1')
+            user = authenticate(username=username, password=raw_password)
             login(request, user)
-            return redirect('home')
+            
+            messages.success(request, "Your account has been successfully created!")
+            return redirect('dashboard')
     else:
         form = UserCreationForm()
+    
     return render(request, 'registration/register.html', {'form': form})
 
 from django.http import JsonResponse
