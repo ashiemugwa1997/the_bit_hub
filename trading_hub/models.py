@@ -51,6 +51,12 @@ class Wallet(models.Model):
     balance = models.DecimalField(max_digits=24, decimal_places=8, default=0)
     address = models.CharField(max_length=100, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['user', 'currency_code']),
+            models.Index(fields=['currency_code']),
+        ]
 
     def __str__(self):
         return f"{self.user.username}'s {self.currency_code} Wallet ({self.balance})"
@@ -87,6 +93,16 @@ class Transaction(models.Model):
                                   blank=True)
     from_wallet = models.ForeignKey(Wallet, on_delete=models.SET_NULL, related_name='outgoing_transactions', null=True,
                                     blank=True)
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['user', '-created_at']),
+            models.Index(fields=['currency']),
+            models.Index(fields=['transaction_type']),
+            models.Index(fields=['status']),
+            models.Index(fields=['from_wallet']),
+            models.Index(fields=['to_wallet']),
+        ]
 
     def __str__(self):
         return f"{self.transaction_type} - {self.amount} {self.currency}"
@@ -134,6 +150,12 @@ class CryptoCurrency(models.Model):
     price_change_24h_percent = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True)
     icon = models.ImageField(upload_to='crypto_icons/', null=True, blank=True)
     last_updated = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['-current_price_usd']),
+            models.Index(fields=['-price_change_24h_percent']),
+        ]
 
     def __str__(self):
         return f"{self.name} ({self.code})"

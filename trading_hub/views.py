@@ -29,6 +29,9 @@ from django.db.models import Q
 from django.contrib.auth.mixins import LoginRequiredMixin
 from .services.tax_calculator import TaxCalculator  # Added TaxCalculator import here
 import os  # Added os import here
+from django.core.cache import cache
+from django.db.models import Prefetch, Sum, Count
+from .utils.cache import cache_result
 
 # Import the API form if the module exists
 try:
@@ -42,22 +45,30 @@ except (ImportError, ModuleNotFoundError):
 
 @login_required
 def dashboard(request):
-    # Get user's wallets
-    wallets = Wallet.objects.filter(user=request.user)
+    # Get user's wallets - cache for 5 minutes
+    cache_key = f'dashboard_wallets_{request.user.id}'
+    wallets = cache.get(cache_key)
+    
+    if wallets is None:
+        wallets = Wallet.objects.filter(user=request.user)
+        cache.set(cache_key, wallets, 300)  # Cache for 5 minutes
     
     # Calculate total portfolio value
     portfolio_value = Decimal('0.00')
     wallet_data = []
     
+    # Get all cryptocurrency prices in one query
+    crypto_prices = {
+        crypto.code: crypto.current_price_usd 
+        for crypto in CryptoCurrency.objects.all()
+    }
+    
     for wallet in wallets:
         if wallet.currency_code == 'USD':
             value = wallet.balance
         else:
-            try:
-                crypto = CryptoCurrency.objects.get(code=wallet.currency_code)
-                value = wallet.balance * crypto.current_price_usd
-            except CryptoCurrency.DoesNotExist:
-                value = Decimal('0.00')
+            price = crypto_prices.get(wallet.currency_code, Decimal('0.00'))
+            value = wallet.balance * price
         
         wallet_data.append({
             'code': wallet.currency_code,
@@ -66,11 +77,16 @@ def dashboard(request):
         })
         portfolio_value += value
     
-    # Get recent transactions
-    recent_transactions = Transaction.objects.filter(user=request.user).order_by('-created_at')[:5]
+    # Get recent transactions - optimize with select_related
+    recent_transactions = Transaction.objects.filter(user=request.user) \
+        .select_related('from_wallet', 'to_wallet') \
+        .order_by('-created_at')[:5]
     
-    # Get trending cryptocurrencies
-    trending_cryptos = CryptoCurrency.objects.all().order_by('-price_change_24h_percent')[:5]
+    # Get trending cryptocurrencies - cache for 15 minutes
+    trending_cryptos = cache.get('trending_cryptos')
+    if trending_cryptos is None:
+        trending_cryptos = list(CryptoCurrency.objects.all().order_by('-price_change_24h_percent')[:5])
+        cache.set('trending_cryptos', trending_cryptos, 900)  # Cache for 15 minutes
     
     return render(request, 'trading_hub/dashboard.html', {
         'wallet_data': wallet_data,
@@ -717,8 +733,22 @@ def recurring_order_detail(request, order_id):
 
 @login_required
 def transaction_history(request):
-    transactions = Transaction.objects.filter(user=request.user).order_by('-created_at')
-    return render(request, 'trading_hub/transaction_history.html', {'transactions': transactions})
+    # Use pagination to improve performance for users with many transactions
+    page = request.GET.get('page', 1)
+    limit = 20  # 20 transactions per page
+    offset = (int(page) - 1) * limit
+    
+    transactions = Transaction.objects.filter(user=request.user) \
+        .select_related('from_wallet', 'to_wallet') \
+        .order_by('-created_at')[offset:offset+limit]
+    
+    count = Transaction.objects.filter(user=request.user).count()
+    
+    return render(request, 'trading_hub/transaction_history.html', {
+        'transactions': transactions,
+        'current_page': int(page),
+        'total_pages': (count + limit - 1) // limit,
+    })
 
 @login_required
 def transaction_detail(request, transaction_id):
@@ -933,8 +963,9 @@ def convert_crypto(request, from_code, to_code):
     return render(request, 'trading_hub/convert/convert.html', context)
 
 @login_required
+@cache_result(timeout=300)  # Cache for 5 minutes
 def get_conversion_rate(request, from_code, to_code):
-    """API endpoint to get current conversion rate"""
+    """API endpoint to get current conversion rate - now cached"""
     try:
         from_crypto = CryptoCurrency.objects.get(code=from_code.upper())
         to_crypto = CryptoCurrency.objects.get(code=to_code.upper())
@@ -1460,9 +1491,22 @@ def platform_guide(request):
 
 @login_required
 def news_feed(request):
-    """View for the main news feed page"""
-    news_articles = News.objects.all().order_by('-published_at')[:20]
-    featured_articles = News.objects.filter(featured=True).order_by('-published_at')[:5]
+    """View for the main news feed page - optimize with prefetch_related"""
+    cache_key = 'news_feed'
+    cached_data = cache.get(cache_key)
+    
+    if cached_data:
+        news_articles, featured_articles = cached_data
+    else:
+        news_articles = News.objects.all() \
+            .prefetch_related('related_cryptocurrencies') \
+            .order_by('-published_at')[:20]
+        
+        featured_articles = News.objects.filter(featured=True) \
+            .prefetch_related('related_cryptocurrencies') \
+            .order_by('-published_at')[:5]
+        
+        cache.set(cache_key, (news_articles, featured_articles), 300)  # Cache for 5 minutes
     
     context = {
         'news_articles': news_articles,

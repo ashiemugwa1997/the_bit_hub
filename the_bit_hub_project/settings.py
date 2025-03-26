@@ -93,156 +93,259 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'csp.middleware.CSPMiddleware',
     'trading_hub.middleware.IPAllowlistMiddleware',
+]   'trading_hub.middleware.performance.PerformanceMonitorMiddleware',  # Add performance middleware
 ]
-
 ROOT_URLCONF = 'the_bit_hub_project.urls'
-
+ROOT_URLCONF = 'the_bit_hub_project.urls'
 TEMPLATES = [
-    {
+    {ATES = [
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [os.path.join(BASE_DIR, 'templates')],  # Add project-level templates directory
-        'APP_DIRS': True,
-        'OPTIONS': {
+        'APP_DIRS': True,join(BASE_DIR, 'templates')],  # Add project-level templates directory
+        'OPTIONS': {True,
             'context_processors': [
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'trading_hub.context_processors.current_year',
-            ],
-        },
-    },
+                'trading_hub.context_processors.current_year',ssages',
+            ],  'trading_hub.context_processors.current_year',
+        },  ],
+    },  },
+]   },
 ]
-
 WSGI_APPLICATION = 'the_bit_hub_project.wsgi.application'
-
+WSGI_APPLICATION = 'the_bit_hub_project.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
-
+# https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+        'NAME': BASE_DIR / 'db.sqlite3',lite3',
+    }   'NAME': BASE_DIR / 'db.sqlite3',
+}   }
 }
+# Database configuration with connection pooling for production
+if not DEBUG:
+    try:
+        import psycopg2# https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
+        import django_db_geventpool
+        PASSWORD_VALIDATORS = [
+        DATABASES = {
+            'default': {  'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+                'ENGINE': 'django_db_geventpool.backends.postgresql_psycopg2',,
+                'NAME': os.environ.get('DB_NAME', 'bithub'),
+                'USER': os.environ.get('DB_USER', 'bithub_user'),  'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+                'PASSWORD': os.environ.get('DB_PASSWORD', ''),,
+                'HOST': os.environ.get('DB_HOST', 'localhost'),
+                'PORT': os.environ.get('DB_PORT', '5432'),  'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+                'ATOMIC_REQUESTS': False,,
+                'CONN_MAX_AGE': 0,
+                'OPTIONS': {  'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+                    'MAX_CONNS': 20,  # Max number of connections in the pool   },
+                }]
+            }
+        }
+        print("Using PostgreSQL with connection pooling")
+    except ImportError:# https://docs.djangoproject.com/en/4.1/topics/i18n/
+        print("Connection pooling requires django_db_geventpool")
+LANGUAGE_CODE = 'en-us'
 
-
-# Password validation
+# Password validationTIME_ZONE = 'UTC'
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
-
+USE_I18N = True
 AUTH_PASSWORD_VALIDATORS = [
-    {
+    {USE_TZ = True
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',# https://docs.djangoproject.com/en/4.1/howto/static-files/
     },
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
+    },STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',ploads)
     },
-]
+]MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
-# Internationalization
+# Internationalization# https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 # https://docs.djangoproject.com/en/4.1/topics/i18n/
-
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LANGUAGE_CODE = 'en-us'
-
-TIME_ZONE = 'UTC'
+ in development for ease of testing
+TIME_ZONE = 'UTC'e in production!
 
 USE_I18N = True
+ear
+USE_TZ = TrueAINS = True
 
-USE_TZ = True
 
-
-# Static files (CSS, JavaScript, Images)
+# Static files (CSS, JavaScript, Images)IFF = True
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = 'static/'ESSION_COOKIE_SECURE = True
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]    SECURE_SSL_REDIRECT = False  # Disable in development
 
-# Media files (User uploads)
+# Media files (User uploads)Ls - updated to work with directly included two-factor URLs
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')rd'
+LOGOUT_REDIRECT_URL = 'login'
 # Default primary key field type
-# https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
+# https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-fieldP)
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField', 'https://unpkg.com')
+://cdn.jsdelivr.net')
 # Security settings - Disable in development for ease of testing
-# Enable these in production!
+# Enable these in production!CSP_FONT_SRC = ("'self'", 'https://cdn.jsdelivr.net')
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
-    SECURE_HSTS_SECONDS = 31536000  # 1 year
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_SECONDS = 31536000  # 1 year'
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = TrueU2F_FACET = 'https://your-domain.com'
     SECURE_HSTS_PRELOAD = True
     SECURE_BROWSER_XSS_FILTER = True
-    SECURE_CONTENT_TYPE_NOSNIFF = True
-    X_FRAME_OPTIONS = 'DENY'
+    SECURE_CONTENT_TYPE_NOSNIFF = Truens.backends.cached_db'
+    X_FRAME_OPTIONS = 'DENY' weeks
     CSRF_COOKIE_SECURE = True
-    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = TrueSESSION_EXPIRE_AT_BROWSER_CLOSE = True
 else:
-    SECURE_SSL_REDIRECT = False  # Disable in development
+    SECURE_SSL_REDIRECT = False  # Disable in developmented IP addresses for IP allowlisting
 
-# Authentication URLs - updated to work with directly included two-factor URLs
-LOGIN_URL = 'login'
+# Authentication URLs - updated to work with directly included two-factor URLs   '127.0.0.1',  # Add your allowed IP addresses here
+LOGIN_URL = 'login']
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
 
-# Content Security Policy (CSP)
+# Content Security Policy (CSP)STRIPE_PUBLISHABLE_KEY = 'pk_test_51JvisNEgswk7aQ984rSLm96APZYfJNW8apESNCq5nbpVxVTWyGGSSV9yGNs4iK4cRftXqftD2jg7EHtoo3qYCpzv00c1OUHT8r'
 CSP_DEFAULT_SRC = ("'self'",)
-CSP_SCRIPT_SRC = ("'self'", 'https://cdn.jsdelivr.net', 'https://unpkg.com')
+CSP_SCRIPT_SRC = ("'self'", 'https://cdn.jsdelivr.net', 'https://unpkg.com')ettings
 CSP_STYLE_SRC = ("'self'", 'https://cdn.jsdelivr.net')
 CSP_IMG_SRC = ("'self'", 'data:')
 CSP_FONT_SRC = ("'self'", 'https://cdn.jsdelivr.net')
-
+  'rest_framework.authentication.SessionAuthentication',
 # U2F settings
 U2F_APP_ID = 'https://your-domain.com'
-U2F_FACET = 'https://your-domain.com'
+U2F_FACET = 'https://your-domain.com'  'rest_framework.permissions.IsAuthenticated',
 
-# Session management settings
+# Session management settingsION_CLASS': 'rest_framework.pagination.PageNumberPagination',
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 SESSION_COOKIE_AGE = 1209600  # 2 weeks
-SESSION_SAVE_EVERY_REQUEST = True
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_SAVE_EVERY_REQUEST = True,
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True  'rest_framework.throttling.UserRateThrottle'
 
-# List of allowed IP addresses for IP allowlisting
-ALLOWED_IPS = [
-    '127.0.0.1',  # Add your allowed IP addresses here
-]
-
+# List of allowed IP addresses for IP allowlisting: {
+ALLOWED_IPS = [,
+    '127.0.0.1',  # Add your allowed IP addresses here   'user': '60/minute'
+]   }
+}
 # Stripe settings
 STRIPE_SECRET_KEY = 'sk_test_51JvisNEgswk7aQ98INM3cer8URjOah60zPpIlvtEVEwuzLfyJHej1QPOSX07KBb3KUC5nidwyEPesGBCeMs9VLjg00zosA81Ax'
 STRIPE_PUBLISHABLE_KEY = 'pk_test_51JvisNEgswk7aQ984rSLm96APZYfJNW8apESNCq5nbpVxVTWyGGSSV9yGNs4iK4cRftXqftD2jg7EHtoo3qYCpzv00c1OUHT8r'
+   "http://localhost:8000",
+# REST Framework settings]
 
-# REST Framework settings
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'trading_hub.api.authentication.APIKeyAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
-    ],
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
-    ],
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 50,
-    'DEFAULT_THROTTLE_CLASSES': [
-        'rest_framework.throttling.AnonRateThrottle',
-        'rest_framework.throttling.UserRateThrottle'
-    ],
-    'DEFAULT_THROTTLE_RATES': {
-        'anon': '10/minute',
-        'user': '60/minute'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+]    "http://localhost:8000",CORS_ALLOWED_ORIGINS = [# CORS settings for API}    }        'user': '60/minute'        'anon': '10/minute',    'DEFAULT_THROTTLE_RATES': {    ],        'rest_framework.throttling.UserRateThrottle'        'rest_framework.throttling.AnonRateThrottle',    'DEFAULT_THROTTLE_CLASSES': [    'PAGE_SIZE': 50,    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',    ],        'rest_framework.permissions.IsAuthenticated',    'DEFAULT_PERMISSION_CLASSES': [    ],        'rest_framework.authentication.SessionAuthentication',        'trading_hub.api.authentication.APIKeyAuthentication',    'DEFAULT_AUTHENTICATION_CLASSES': [REST_FRAMEWORK = {
+# Caching settings
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'bithub-cache',
+        'TIMEOUT': 300,  # 5 minutes default timeout
     }
 }
 
-# CORS settings for API
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:8000",
-]
+# For production, use Redis if available
+if not DEBUG:
+    try:
+        import redis
+        CACHES = {
+            'default': {
+                'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+                'LOCATION': 'redis://127.0.0.1:6379/1',
+                'OPTIONS': {
+                    'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                }
+            }
+        }
+        print("Using Redis cache backend")
+    except ImportError:
+        print("Redis package not installed, using local memory cache")
+
+# Customize logging configuration to include performance logs
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        }
+    },
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose'
+        },
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'bithub.log'),
+            'formatter': 'verbose',
+        },
+        'performance_file': {
+            'level': 'WARNING',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'performance.log'),
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'trading_hub': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'performance': {
+            'handlers': ['console', 'performance_file'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+    }
+}
+
+# Ensure log directory exists
+os.makedirs(os.path.join(BASE_DIR, 'logs'), exist_ok=True)
