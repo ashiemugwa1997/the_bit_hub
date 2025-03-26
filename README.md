@@ -11,6 +11,8 @@ BitHub is a powerful, user-friendly cryptocurrency trading platform built with D
 - **Limit Orders**: Set orders to execute automatically when prices reach a specific level
 - **Stop Orders**: Protect your investments with stop loss or take profit orders
 - **Stop-Limit Orders**: Combine stop triggers with limit order precision
+- **Crypto Conversion**: Easily convert between different cryptocurrencies
+- **Tax Reporting**: Generate tax reports for your trading activity
 
 ### Platform Features
 - **Real-time Price Charts**: View cryptocurrency price movements with interactive charts
@@ -30,12 +32,34 @@ BitHub is a powerful, user-friendly cryptocurrency trading platform built with D
 
 ## Installation
 
-### Prerequisites
-- Python 3.8+
-- Redis server
-- Git
+### Automated Installation
 
-### Setup Steps
+#### Windows
+1. Clone the repository
+   ```bash
+   git clone https://github.com/yourusername/the_bit_hub.git
+   cd the_bit_hub
+   ```
+
+2. Run the installer script
+   ```bash
+   install.bat
+   ```
+
+#### Linux/Mac
+1. Clone the repository
+   ```bash
+   git clone https://github.com/yourusername/the_bit_hub.git
+   cd the_bit_hub
+   ```
+
+2. Make the installer script executable and run it
+   ```bash
+   chmod +x install.sh
+   ./install.sh
+   ```
+
+### Manual Installation
 
 1. **Clone the repository**
    ```bash
@@ -45,36 +69,21 @@ BitHub is a powerful, user-friendly cryptocurrency trading platform built with D
 
 2. **Create a virtual environment**
    ```bash
-   python -m venv venv
+   python -m venv env
    ```
 
 3. **Activate the virtual environment**
-   - Windows: `venv\Scripts\activate`
-   - Linux/Mac: `source venv/bin/activate`
+   - Windows: `env\Scripts\activate`
+   - Linux/Mac: `source env/bin/activate`
 
 4. **Install dependencies**
    ```bash
    pip install -r requirements.txt
    ```
 
-5. **Run migrations**
+5. **Run setup script**
    ```bash
-   python manage.py migrate
-   ```
-
-6. **Create a superuser**
-   ```bash
-   python manage.py createsuperuser
-   ```
-
-7. **Populate sample cryptocurrency data**
-   ```bash
-   python manage.py populate_crypto_data
-   ```
-
-8. **Generate static files**
-   ```bash
-   python manage.py collectstatic
+   python setup.py
    ```
 
 ## Running the Application
@@ -129,6 +138,65 @@ For production deployment, consider the following:
 4. Add view functions in `views.py`
 5. Create templates in `templates/trading_hub/`
 6. Update URL patterns in `urls.py`
+
+## Testing
+
+### Test Coverage
+
+BitHub implements comprehensive test coverage for all critical components:
+
+#### Model Testing
+- Tests for model creation, validation and methods
+- Relationship verification between models
+- Business logic tests for financial calculations
+
+#### View Testing
+- Authentication requirements
+- Response status codes
+- Context data verification
+- Form submission handling
+
+#### API Testing
+- Endpoint availability
+- Authentication and permission checks
+- Response format validation
+- Error handling
+
+#### Integration Testing
+- End-to-end transaction workflows
+- Order creation and execution
+- Wallet balance updates
+- Tax calculation accuracy
+
+### Running Tests
+
+Run all tests with coverage report:
+```bash
+python run_tests.py
+```
+
+Run specific test modules:
+```bash
+python run_tests.py --module models  # Test just models
+python run_tests.py --module views   # Test just views
+python run_tests.py --module api     # Test just API endpoints
+```
+
+Generate HTML coverage report:
+```bash
+python run_tests.py --html
+```
+
+The HTML report will be available in the `htmlcov` directory.
+
+### Test Structure
+
+Tests are organized in the following structure:
+- `trading_hub/tests/test_models.py` - Tests for database models
+- `trading_hub/tests/test_views.py` - Tests for view functions
+- `trading_hub/tests/test_forms.py` - Tests for form validation
+- `trading_hub/tests/test_api.py` - Tests for API endpoints
+- `trading_hub/tests/test_services.py` - Tests for service functions
 
 ## License
 

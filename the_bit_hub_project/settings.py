@@ -39,20 +39,48 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'trading_hub.apps.TradingHubConfig',
-    # 'django_q',  # Comment out Django Q due to compatibility issues
+    # Django Q is now optional
     'django_otp',
     'django_otp.plugins.otp_totp',
     'django_otp.plugins.otp_static',
     'django_otp.plugins.otp_email',
     'two_factor',
     'phonenumber_field',
-    # 'django_u2f',  # Temporarily commented out due to compatibility issues
     
     # API related apps
     'rest_framework',
     'drf_yasg',
     'corsheaders',
 ]
+
+# Try to import Django Q, if available
+try:
+    import django_q
+    INSTALLED_APPS.append('django_q')
+    Q_CLUSTER = {
+        'name': 'BitHub',
+        'workers': 4,
+        'recycle': 500,
+        'timeout': 60,
+        'compress': True,
+        'save_limit': 250,
+        'queue_limit': 500,
+        'cpu_affinity': 1,
+        'label': 'Django Q',
+        'redis': {
+            'host': '127.0.0.1',
+            'port': 6379,
+            'db': 0,
+            'password': None,
+            'socket_timeout': None,
+            'charset': 'utf-8',
+            'errors': 'strict',
+            'unix_socket_path': None,
+        }
+    }
+    print("Django Q installed and configured.")
+except ImportError:
+    print("Django Q not available. Task processing will be limited.")
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',  # Should be at the top
@@ -188,29 +216,6 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 ALLOWED_IPS = [
     '127.0.0.1',  # Add your allowed IP addresses here
 ]
-
-# Comment out Django Q Configuration due to compatibility issues
-# Q_CLUSTER = {
-#     'name': 'BitHub',
-#     'workers': 4,
-#     'recycle': 500,
-#     'timeout': 60,
-#     'compress': True,
-#     'save_limit': 250,
-#     'queue_limit': 500,
-#     'cpu_affinity': 1,
-#     'label': 'Django Q',
-#     'redis': {
-#         'host': '127.0.0.1',
-#         'port': 6379,
-#         'db': 0,
-#         'password': None,
-#         'socket_timeout': None,
-#         'charset': 'utf-8',
-#         'errors': 'strict',
-#         'unix_socket_path': None,
-#     }
-# }
 
 # Stripe settings
 STRIPE_SECRET_KEY = 'sk_test_51JvisNEgswk7aQ98INM3cer8URjOah60zPpIlvtEVEwuzLfyJHej1QPOSX07KBb3KUC5nidwyEPesGBCeMs9VLjg00zosA81Ax'
